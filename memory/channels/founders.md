@@ -5,7 +5,7 @@ Last updated: 2026-04-30
 
 ## Purpose / context
 Private founders channel. Strategic decisions, co-founder alignment,
-sensitive business discussions between Roman and Sergey.
+sensitive business discussions between Roman and Sergei.
 
 ## Recurring topics
 <!-- Auto-populated by daily enrichment -->
@@ -18,7 +18,7 @@ sensitive business discussions between Roman and Sergey.
 
 ## Regular participants
 - Roman Evstigneev — product, engineering, automation
-- Sergey Maslennikov — sales, market, business development
+- Sergei Maslennikov — sales, market, business development
 
 ## Stale topics (not discussed 30+ days)
 <!-- Moved here by weekly review -->

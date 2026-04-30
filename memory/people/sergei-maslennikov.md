@@ -1,4 +1,4 @@
-# Sergey Maslennikov
+# Sergei Maslennikov
 Slack ID: (unknown — to be discovered from Slack activity)
 Role: Co-founder — business & sales
 Company: Axion Lab
