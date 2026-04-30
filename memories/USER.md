@@ -1,0 +1,1 @@
+Russian-speaking user. Name: Roman Evstigneev. GitHub: RomanEvstigneev. Prefers hands-on, step-by-step guidance. Cares about version control and managing configs in GitHub.

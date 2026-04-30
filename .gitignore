@@ -1,0 +1,38 @@
+# Secrets
+.env
+auth.json
+auth.lock
+
+# Sessions & logs
+sessions/
+logs/
+interrupt_debug.log
+
+# Cache
+audio_cache/
+image_cache/
+models_dev_cache.json
+
+# Database state
+state.db
+state.db-shm
+state.db-wal
+
+# Checkpoints & sandboxes (can be huge)
+checkpoints/
+sandboxes/
+
+# Pairing codes
+pairing/
+
+# Miscellaneous temporary files
+.hermes_history
+.update_check
+.skills_prompt_snapshot.json
+
+# Lock files
+memories/*.lock
+*.lock
+
+# Binaries
+bin/
