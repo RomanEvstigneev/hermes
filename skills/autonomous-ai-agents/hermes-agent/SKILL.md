@@ -165,6 +165,25 @@ To emit only the slash-commands array:
 hermes slack manifest --slashes-only > /tmp/slashes.json
 ```
 
+**Known issue: generated manifest may be rejected by Slack.** The generated manifest uses `_metadata.major_version: 1` and includes `url` fields in slash commands pointing to a placeholder domain (`hermes-agent.local`). When Slack rejects it, fix by:
+
+1. Change `_metadata.major_version` from `1` to `2`
+2. Remove the `"url"` field from every slash command object (Socket Mode handles routing via WebSocket, no URL needed)
+3. Add a proper `app_home` section under `features`:
+   ```
+   "app_home": {
+     "home_tab_enabled": false,
+     "messages_tab_enabled": true,
+     "messages_tab_read_only_enabled": false
+   }
+   ```
+4. **Fix invalid command names.** Slack rejects slash command names containing hyphens (`-`) or underscores (`_`). The generated manifest includes commands like `/reload-mcp`, `/reload-skills`, `/reload_mcp`, `/reload_skills`, `/set-home`. Rename them to use only lowercase letters and numbers:
+   - `/reload-mcp` -> `/reloadmcp`
+   - `/reload-skills` -> `/reloadskills`
+   - Remove `/reload_mcp`, `/reload_skills`, `/set-home` (they are aliases for existing commands)
+
+The cleaned-up manifest should be schema v2, have no `url` fields in slash commands, include the `app_home` block, and use only lowercase-letter command names.
+
 ### Sessions
 
 ```
