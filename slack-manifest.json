@@ -148,11 +148,11 @@
         "usage_hint": "[subcommand]"
       },
       {
-        "command": "/reload-mcp",
+        "command": "/reloadmcp",
         "description": "Reload MCP servers from config"
       },
       {
-        "command": "/reload-skills",
+        "command": "/reloadskills",
         "description": "Re-scan skills directory for changes"
       },
       {
@@ -214,21 +214,9 @@
         "usage_hint": "<prompt>"
       },
       {
-        "command": "/set-home",
-        "description": "Alias for /sethome - Set this chat as the home channel"
-      },
-      {
         "command": "/provider",
         "description": "Alias for /model - Switch model for this session",
         "usage_hint": "[model] [--provider name] [--global]"
-      },
-      {
-        "command": "/reload_mcp",
-        "description": "Alias for /reload-mcp - Reload MCP servers from config"
-      },
-      {
-        "command": "/reload_skills",
-        "description": "Alias for /reload-skills - Re-scan skills directory"
       }
     ]
   },
