@@ -1,0 +1,5 @@
+Hermes gateway in Docker: `hermes gateway install --system` refuses inside containers. Workaround: add `hermes gateway run &` to the container entrypoint script (e.g. /hermes.sh) before the interactive `hermes` command. Container needs `--restart unless-stopped` for auto-recovery. Roman's setup: /hermes.sh is the entrypoint, modified to background gateway on start. Container ID pattern: ac13f5cc85be. The hermes-agent skill is flagged DANGEROUS by security scanner — patches require confirmation and may fail silently.
+§
+Slack configuration: require_mention=true, auto_thread=true. Allowed users: Roman (U09NJ1H6V6K) and U0ABC4S3HC5. Gateway auto-starts via /hermes.sh in Docker.
+§
+Custom modification: modified PLATFORM_HINTS["slack"] in /usr/local/lib/hermes-agent/agent/prompt_builder.py to force English-only responses on Slack. Will be overwritten on Hermes update.

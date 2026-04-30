@@ -1,1 +1,3 @@
 Russian-speaking user. Name: Roman Evstigneev. GitHub: RomanEvstigneev. Prefers hands-on, step-by-step guidance. Cares about version control and managing configs in GitHub.
+§
+Name: Roman Evstigneev (GitHub: RomanEvstigneev). Speaks Russian. Uses Hermes Agent, has it at /usr/local/lib/hermes-agent with config/data at /opt/data/. Hosted on a Debian Linux server. Has a public git repo at github.com/RomanEvstigneev/hermes with Hermes config version-controlled.

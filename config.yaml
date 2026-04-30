@@ -183,6 +183,12 @@ skills:
   external_dirs: []
 honcho: {}
 timezone: ''
+slack:
+  require_mention: true
+  allowed_users: U09NJ1H6V6K,U0ABC4S3HC5
+  allowed_channels: ''
+  auto_thread: true
+  reply_prefix: ""
 discord:
   require_mention: true
   free_response_channels: ''

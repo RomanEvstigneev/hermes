@@ -1,0 +1,38 @@
+{
+  "jobs": [
+    {
+      "id": "de70ffe7b435",
+      "name": "Slack Daily Digest",
+      "prompt": "You are Hermes bot in Slack. Above is raw data about messages in Slack channels for the previous day, collected by the script.\n\nIMPORTANT: Respond ONLY in English. Never use any other language regardless of what language the messages are written in.\n\nYour task: compose a daily digest and send it to Slack (channel C0B18TP48JD).\n\nIf the script reported \"No messages found\" \u2014 send a short message: \":zzz: No activity in any channels yesterday.\"\n\nIf there are messages \u2014 compose the digest in the following format:\n\n---\n\ud83d\udccb *Digest for [date]*\n\n*#channel1* \u2014 [brief description: what was discussed, who participated]\n*#channel2* \u2014 [brief description]\n\n---\n\ud83d\udd11 *Key Decisions:*\n\u2022 [decision 1 \u2014 which channel]\n\u2022 [decision 2]\n(If no decisions were made \u2014 write \"No explicit decisions recorded\")\n\n---\n\u2753 *Unanswered Questions:*\n\u2022 [question 1 \u2014 author, channel]\n\u2022 [question 2]\n(If no unanswered questions \u2014 write \"All questions received answers\")\n\n---\n\nRules:\n- ENGLISH ONLY \u2014 always write in English, even if channel messages are in Russian or any other language\n- Be specific: who said/decided/asked what\n- Do not retell every message \u2014 only the essence\n- Unanswered question = a question at the end of a thread/channel with no clear reply\n- Key decision = when participants explicitly agreed on something\n\nAfter composing the digest \u2014 send it to Slack channel C0B18TP48JD using the send_message tool with target \"slack:C0B18TP48JD\".",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "slack_daily_digest.py",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * *",
+        "display": "0 8 * * *"
+      },
+      "schedule_display": "0 8 * * *",
+      "repeat": {
+        "times": null,
+        "completed": 3
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-04-30T12:57:46.279174+00:00",
+      "next_run_at": "2026-05-01T08:00:00+00:00",
+      "last_run_at": "2026-04-30T13:05:06.788157+00:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": null
+    }
+  ],
+  "updated_at": "2026-04-30T13:06:05.150116+00:00"
+}
