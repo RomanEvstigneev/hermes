@@ -204,5 +204,34 @@ def main():
             print(f"[{msg['time']}] {msg['user']}: {msg['text']}{thread_note}")
         print()
 
+def output_memory_context():
+    """Read and output existing memory files so the cron agent has context."""
+    memory_dir = "/opt/data/memory"
+    if not os.path.exists(memory_dir):
+        return
+
+    print("\n=== MEMORY CONTEXT ===")
+    print("(Use this to enrich the digest — who people are, recurring topics, open questions)\n")
+
+    index_path = os.path.join(memory_dir, "MEMORY_INDEX.md")
+    if os.path.exists(index_path):
+        with open(index_path) as f:
+            print("--- MEMORY_INDEX.md ---")
+            print(f.read())
+
+    for subdir in ("people", "channels"):
+        dirpath = os.path.join(memory_dir, subdir)
+        if not os.path.exists(dirpath):
+            continue
+        for fname in sorted(os.listdir(dirpath)):
+            if not fname.endswith(".md"):
+                continue
+            fpath = os.path.join(dirpath, fname)
+            with open(fpath) as f:
+                print(f"--- memory/{subdir}/{fname} ---")
+                print(f.read())
+
+
 if __name__ == "__main__":
     main()
+    output_memory_context()

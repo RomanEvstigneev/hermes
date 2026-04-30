@@ -32,7 +32,139 @@
       "last_delivery_error": null,
       "deliver": "local",
       "origin": null
+    },
+    {
+      "id": "6eb9f1258267",
+      "name": "Daily Git Auto-Commit",
+      "prompt": "You are Hermes bot. Above is the output from the daily git auto-commit script for the /opt/data repo.\n\nIMPORTANT: Respond ONLY in English.\n\nRead the STATUS line from the script output and send a message to Slack channel C0B18TP48JD using send_message tool with target \"slack:C0B18TP48JD\".\n\nIf STATUS is \"no_changes\":\nSend: \":white_check_mark: *Daily backup* \u2014 no changes, nothing to commit.\"\n\nIf STATUS is \"pushed\":\nSend a short message like:\n\":floppy_disk: *Daily backup pushed* \u2014 [date]\n\u2022 Modified: N files\n\u2022 Added: N files  \n\u2022 Deleted: N files\n[list up to 5 most interesting changed files, skip bulk skills updates if there are many]\"\n\nIf STATUS is \"push_failed\":\nSend: \":warning: *Daily backup FAILED* \u2014 commit was created but push failed. Manual intervention needed.\nError: [error details]\"\n\nKeep it brief and informative.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "scripts/daily_git_commit.py",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 0 * * *",
+        "display": "0 0 * * *"
+      },
+      "schedule_display": "0 0 * * *",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-04-30T13:08:59.374230+00:00",
+      "next_run_at": "2026-05-01T00:00:00+00:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": null
+    },
+    {
+      "id": "4f983f900cfe",
+      "name": "Daily Memory Enrichment",
+      "prompt": "You are Hermes bot maintaining a persistent memory system for Axion Lab's Slack workspace.\n\nAbove you have:\n1. Yesterday's Slack messages per channel\n2. All existing memory files (people profiles + channel profiles)\n\nIMPORTANT: English only. Today's date for \"Last updated\" fields: use the date from the script header.\n\nYour task: update the memory files to reflect what you observed. Use write_file and patch tools to save changes to /opt/data/memory/.\n\n## Rules for updating people files (/opt/data/memory/people/)\n\nFOR EACH PERSON seen in today's messages:\n- If they have no profile file yet: CREATE one at /opt/data/memory/people/<firstname-lastname>.md\n  Use the format from existing files. Set Role to \"unknown \u2014 to be determined\" if unclear.\n  Include their Slack ID from the \"USERS SEEN TODAY\" section.\n- Update \"Last seen\" date\n- Add NEW observations to \"Pending confirmation\" section with today's date and \"1x seen\"\n- If a fact already exists in Pending from a previous day: move it to \"Confirmed facts\" and add \"(seen 2x)\"\n- If a fact already exists in Confirmed: increment the count\n- NEVER modify \"Manual overrides\" section\n- NEVER delete anything from Confirmed or Pending \u2014 only weekly review does that\n\nFOR Sergey Maslennikov specifically: if you see his messages and can identify his Slack ID, update it in his profile file.\n\n## Rules for updating channel files (/opt/data/memory/channels/)\n\nFOR EACH CHANNEL with activity:\n- Update \"Last updated\" date\n- Add new topics to \"Recurring topics\" if they appear new (with today's date)\n- Add unresolved questions to \"Active open questions\" with date + author\n- If a question from Active open questions was clearly answered today: remove it or mark resolved\n- Add explicit decisions/agreements to \"Key decisions\" with date\n- Add new participants to \"Regular participants\" if not already listed\n- If a channel has activity but no file exists: CREATE one\n\n## Rules for MEMORY_INDEX.md\n\nAfter updating files, update /opt/data/memory/MEMORY_INDEX.md:\n- Update \"Last updated\" at top\n- Add any new people to the people table\n- Update \"Last updated\" and \"Last seen\" dates in tables\n\n## What counts as a \"fact\" worth recording\n\nGood facts (record these):\n- Person's role or responsibility (\"leads sales calls\", \"handles investor comms\")\n- Recurring behavior (\"always reviews PRs on Mondays\")\n- Topic they consistently drive\n- Decision they made\n- Question they raised that wasn't answered\n\nBad facts (skip these):\n- One-off casual remarks\n- Greetings, reactions\n- Very short messages with no substance\n\n## After updating files\n\nSend a brief summary to Slack channel C0B18TP48JD using send_message with target \"slack:C0B18TP48JD\":\n\n\":brain: *Memory updated \u2014 [date]*\n\u2022 People updated: N (list names)\n\u2022 New profiles created: N (list names if any)\n\u2022 Channel files updated: N\n\u2022 New facts added: N\n\u2022 Facts promoted to confirmed: N\"\n\nIf no messages today: just update \"Last updated\" in index and send \":zzz: Memory check \u2014 no activity yesterday, nothing to update.\"",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "scripts/slack_memory_update.py",
+      "schedule": {
+        "kind": "cron",
+        "expr": "5 8 * * *",
+        "display": "5 8 * * *"
+      },
+      "schedule_display": "5 8 * * *",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-04-30T13:25:25.274026+00:00",
+      "next_run_at": "2026-05-01T08:05:00+00:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": null
+    },
+    {
+      "id": "bbf5f4486ea0",
+      "name": "Weekly Memory Review",
+      "prompt": "You are Hermes bot performing a weekly memory review for Axion Lab's Slack workspace.\n\nAbove you have: last 7 days of Slack activity + all existing memory files.\n\nIMPORTANT: English only. Perform pruning and consolidation \u2014 this is a cleanup run, not enrichment.\n\n## Your tasks:\n\n### 1. Prune people files (/opt/data/memory/people/)\n\nFor each person file:\n- \"Pending confirmation\" facts older than 14 days with no confirmation \u2192 DELETE them\n- \"Confirmed\" facts with \"Last seen\" older than 30 days \u2192 MOVE to \"Stale\" section\n- \"Stale\" facts: update or leave (monthly clean handles archiving)\n- Consolidate duplicate or near-identical Confirmed facts into one cleaner statement\n- Update \"Last updated\" date\n\n### 2. Prune channel files (/opt/data/memory/channels/)\n\nFor each channel file:\n- \"Active open questions\" older than 30 days with no resolution \u2192 move to Stale\n- \"Recurring topics\" not mentioned this week \u2192 add \"(not seen this week)\" note\n- Merge duplicate topic entries\n- Update \"Last updated\" date\n\n### 3. Update MEMORY_INDEX.md\n\nUpdate last-updated dates for all modified files.\n\n### 4. Send Slack summary to C0B18TP48JD via send_message tool (target: \"slack:C0B18TP48JD\"):\n\n\":scissors: *Weekly memory review \u2014 [date range]*\n\u2022 Facts promoted to confirmed: N\n\u2022 Pending facts removed (expired): N\n\u2022 Facts moved to stale: N\n\u2022 People files updated: N\n\u2022 Channel files updated: N\"\n\nIf nothing changed: \":white_check_mark: Weekly memory review \u2014 everything looks fresh, no cleanup needed.\"\n\n### Rules:\n- NEVER touch \"Manual overrides\" sections\n- Only modify files that actually need changes\n- Be conservative \u2014 when in doubt, keep the fact rather than delete it",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "scripts/slack_memory_weekly.py",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * 0",
+        "display": "0 9 * * 0"
+      },
+      "schedule_display": "0 9 * * 0",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-04-30T13:26:14.842714+00:00",
+      "next_run_at": "2026-05-03T09:00:00+00:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": null
+    },
+    {
+      "id": "787d974909f4",
+      "name": "Monthly Memory Deep Clean",
+      "prompt": "You are Hermes bot performing a monthly deep memory clean for Axion Lab's Slack workspace.\n\nAbove you have: last 30 days of Slack activity summary + ALL memory files including archive.\n\nIMPORTANT: English only. This is a deep validation run \u2014 validate every fact against real evidence.\n\n## Your tasks:\n\n### 1. Validate all Confirmed facts in people files\n\nFor each Confirmed fact in each person's profile:\n- Check if the person was active in the last 30 days (see activity summary)\n- If person was active but fact has zero supporting evidence in 30-day messages \u2192 demote to Stale\n- If person was NOT active at all in 30 days \u2192 move entire file to /opt/data/memory/archive/people/<filename>\n  with a note \"Archived: [date] \u2014 no activity in 30 days\"\n\n### 2. Validate channel files\n\nFor each channel file:\n- If channel had 0 messages in 30 days \u2192 move to /opt/data/memory/archive/channels/<filename>\n- Otherwise: remove Key Decisions older than 90 days (they've served their purpose)\n- Archive open questions older than 60 days with no resolution\n\n### 3. Rebuild MEMORY_INDEX.md\n\nRebuild it fresh with current accurate state of all files (active + archived).\n\n### 4. Send a detailed DM report to Roman (Slack user U09NJ1H6V6K) via send_message tool (target: \"slack:U09NJ1H6V6K\"):\n\n\":package: *Monthly memory deep clean \u2014 [Month YYYY]*\n\n*Changes made:*\n\u2022 Facts validated: N total\n\u2022 Demoted to stale: N (list them)\n\u2022 People archived (inactive): N (list names)\n\u2022 Channels archived (inactive): N (list names)\n\u2022 Old decisions removed: N\n\n*Current memory state:*\n\u2022 Active people profiles: N\n\u2022 Active channel profiles: N\n\u2022 Archived: N people, N channels\n\nPlease review and reply with any corrections. I'll protect anything you flag with `@hermes remember: ...`\"\n\n### Rules:\n- NEVER touch \"Manual overrides\" sections \u2014 ever\n- When archiving a file, use write_file to create it in archive/ then delete the original with terminal\n- Be conservative on deletions \u2014 stale is safer than deleted\n- The monthly clean DM goes to Roman directly (U09NJ1H6V6K), not to the home channel",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "scripts/slack_memory_monthly.py",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 7 1 * *",
+        "display": "0 7 1 * *"
+      },
+      "schedule_display": "0 7 1 * *",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-04-30T13:26:28.708082+00:00",
+      "next_run_at": "2026-05-01T07:00:00+00:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "local",
+      "origin": null
     }
   ],
-  "updated_at": "2026-04-30T13:06:05.150116+00:00"
+  "updated_at": "2026-04-30T13:26:28.708898+00:00"
 }
