@@ -63,7 +63,9 @@ Avoid dumping full process environments because they can contain secrets; only i
 
 If the container entrypoint executes bare `hermes` and an older virtualenv appears earlier on PATH, change the entrypoint to use the intended absolute launcher and preserve the data directory. Check PID 1's environment too: `tr '\0' '\n' < /proc/1/environ | grep -E '^(PATH|HERMES_HOME|TERMINAL_CWD|PLAYWRIGHT_BROWSERS_PATH)='`. In Roman's Docker deployment, PID 1 may keep `/opt/hermes/.venv/bin` first in PATH, so bare `hermes` in `/hermes.sh` keeps launching `/opt/hermes` v0.9 even when `/usr/local/bin/hermes` is v0.11+.
 
-Before deleting or quarantining a stale `/opt/hermes` tree, verify it is not still serving runtime assets. In Roman's container, the old v0.9 source tree was dead for Python imports, but PID 1 still had `PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/.playwright` and the browser cache under that directory was large and active. Migrate/reinstall Playwright browsers or update the environment first, then restart the container, then quarantine `/opt/hermes` before permanent deletion.
+Before deleting or quarantining a stale `/opt/hermes` tree, verify it is not still serving runtime assets. In Roman's container, the old v0.9 source tree was dead for Python imports, but PID 1 still had `PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/.playwright` and the browser cache under that directory was large and active. Migrate/reinstall Playwright browsers or update the environment first, then restart the container, then quarantine `/opt/hermes` before permanent deletion. If the container cannot be restarted immediately, keep `/opt/hermes` as a small compatibility shim with `.playwright` symlinked to the new cache so inherited PID 1 environment remains safe.
+
+If `/opt/data` is a git repo, update `.gitignore` and backup automation before moving large runtime assets or backup archives into it. Exclude `cache/`, `backups/`, gateway/process state files, DBs, and Python bytecode; otherwise daily backup jobs can create huge commits and push failures. See `references/roman-post-upgrade-audit-2026-05-01.md` for the exact recovery pattern.
 
 Recommended entrypoint pattern:
 
@@ -131,6 +133,40 @@ HERMES_HOME=/opt/data /usr/local/bin/hermes doctor
 
 Preserve Roman-specific settings such as `cron.wrap_response: false` after migration.
 
+## Post-update audit checklist
+
+When the user asks whether anything remains to fix after an update, do a read-only audit before proposing cleanup. Include runtime, dead-code, config, gateway, cron, git, and disk checks:
+
+```bash
+date -u '+%Y-%m-%d %H:%M:%S UTC'
+printf 'PATH=%s\n' "$PATH"; command -v hermes; which -a hermes 2>/dev/null || true
+/usr/local/bin/hermes --version 2>&1 || true
+hermes --version 2>&1 || true
+/opt/hermes/.venv/bin/hermes --version 2>&1 || true
+ps -eo pid,ppid,stat,etime,cmd | grep -E '[h]ermes|[t]tyd' || true
+pwdx $(ps -eo pid,cmd | awk '/[h]ermes|[t]tyd/{print $1}' | tr '\n' ' ') 2>/dev/null || true
+sed -n '1,180p' /hermes.sh 2>/dev/null || true
+tr '\0' '\n' < /proc/1/environ 2>/dev/null | grep -E '^(PATH|HERMES_HOME|TERMINAL_CWD|PLAYWRIGHT_BROWSERS_PATH)=' || true
+du -sh /opt/hermes /opt/hermes.old-* /usr/local/lib/hermes-agent /opt/data 2>/dev/null || true
+find /opt/hermes -maxdepth 3 -mindepth 1 -printf '%M %s %TY-%Tm-%Td %TH:%TM %p -> %l\n' 2>/dev/null | sort | head -100
+HERMES_HOME=/opt/data /usr/local/bin/hermes config check 2>&1 || true
+HERMES_HOME=/opt/data /usr/local/bin/hermes doctor 2>&1 || true
+HERMES_HOME=/opt/data /usr/local/bin/hermes status --all 2>&1 || true
+HERMES_HOME=/opt/data /usr/local/bin/hermes gateway status 2>&1 || true
+HERMES_HOME=/opt/data /usr/local/bin/hermes cron list 2>&1 || true
+git -C /usr/local/lib/hermes-agent status --short --branch 2>&1 || true
+git -C /opt/data status --short --branch 2>&1 || true
+df -h / /opt/data 2>/dev/null || true
+```
+
+Do not assume `python` exists in slim containers. For YAML/JSON inspection that needs packages from the Hermes environment, use the Hermes venv explicitly, e.g. `/usr/local/lib/hermes-agent/venv/bin/python3`, not bare `python` or system `python3`.
+
+Classify old paths carefully:
+
+- A large `/opt/hermes.old-*` quarantine is dead code if no process cwd or command points there and all `hermes --version` checks use `/usr/local/lib/hermes-agent`.
+- A tiny `/opt/hermes` shim containing only a README and `.playwright` symlink is not active code; keep it until PID 1 no longer has inherited `/opt/hermes` environment or the container has been restarted.
+- Old gateway lock errors in logs are historical if current gateway state is running and Slack state is connected.
+
 ## Verification
 
 After restart, verify:
@@ -151,7 +187,7 @@ Confirm that:
 - `ps` does not show active gateway/CLI processes from `/opt/hermes`; zombie `[hermes] <defunct>` entries may persist until container restart, but they should not hold gateway locks.
 - Messaging platforms such as Slack remain configured.
 
-If gateway startup fails with `Slack app token already in use (PID <pid>)` and that PID is `[hermes] <defunct>`, clear scoped gateway locks using the modern runtime before restarting the gateway. Remove stale temp PID files such as `/tmp/hermes_gateway_started.pid` if they point at dead processes.
+If gateway startup fails with `Slack app token already in use (PID <pid>)` and that PID is `[hermes] <defunct>`, clear scoped gateway locks using the modern runtime before restarting the gateway. After restarting, re-run `hermes gateway status`, inspect `/opt/data/gateway_state.json`, tail gateway logs for Slack Socket Mode connected, and run `hermes cron list` to confirm the gateway-stopped warning is gone. Remove stale temp PID files such as `/tmp/hermes_gateway_started.pid` if they point at dead processes. For Roman's deployment, log recurring stale-lock incidents in `/opt/data/logs/incident_log.md` with summary/root cause/actions/verification/follow-up.
 
 If `hermes doctor` reports an outdated config version after switching launchers, run:
 

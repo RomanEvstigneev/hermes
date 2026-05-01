@@ -1,7 +1,7 @@
 # #hermes-home
 Channel ID: C0B18TP48JD
 Type: private
-Last updated: 2026-05-01
+Last updated: 2026-04-30
 
 ## Purpose / context
 Private channel for Hermes bot interaction. Bot delivers daily digests,
@@ -12,6 +12,7 @@ and automation from this channel.
 - Daily digest delivery (automated, 08:00 UTC)
 - Daily git backup status (automated, 00:00 UTC)
 - Bot configuration and commands
+- 2026-04-30: Hermes capability questions, including thread context handling, channel reading, and active model identity.
 
 ## Active open questions
 <!-- Questions raised with no resolution yet -->

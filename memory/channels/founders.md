@@ -1,14 +1,14 @@
 # #founders
 Channel ID: C0B01JFKWUV
 Type: private
-Last updated: 2026-05-01
+Last updated: 2026-04-30
 
 ## Purpose / context
 Private founders channel. Strategic decisions, co-founder alignment,
 sensitive business discussions between Roman and Sergei.
 
 ## Recurring topics
-<!-- Auto-populated by daily enrichment -->
+- 2026-04-30: Hermes bot setup and testing.
 
 ## Active open questions
 <!-- Questions raised with no resolution yet -->

@@ -2,7 +2,7 @@
 Slack ID: U09NJ1H6V6K
 Role: CEO / Co-founder — main admin
 Company: Axion Lab
-Last updated: 2026-05-01
+Last updated: 2026-04-30
 Last seen: 2026-04-30
 
 ## Confirmed facts
@@ -10,6 +10,8 @@ Last seen: 2026-04-30
 
 ## Pending confirmation
 <!-- Facts seen once — promoted to Confirmed after 2+ sightings within 14 days -->
+- 2026-04-30 (1x seen): Configures Hermes setup and asks others not to use it while setup is in progress.
+- 2026-04-30 (1x seen): Uses #hermes-home to ask Hermes bot capability and model questions.
 
 ## Stale (not seen 30+ days)
 - Demoted 2026-05-01: Co-founder and CEO of Axion Lab — no supporting evidence in the available 30-day message summary.

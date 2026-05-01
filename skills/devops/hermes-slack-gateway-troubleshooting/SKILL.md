@@ -65,13 +65,17 @@ HERMES_HOME=/opt/data /usr/local/bin/hermes gateway run
 # If launching from an agent tool session, start it as a tracked background process with the terminal tool rather than using shell-level nohup/disown. Do not use the stale /opt/hermes launcher.
 ```
 
-Then verify:
+Then verify from the same modern runtime that launched the gateway, and also check cron because a stopped gateway prevents scheduled jobs from firing:
 
 ```bash
 ps -ef | grep -E 'hermes.*gateway run|gateway.*run' | grep -v grep
-/usr/local/bin/hermes gateway status 2>&1 || true
+HERMES_HOME=/opt/data /usr/local/bin/hermes gateway status 2>&1 || true
 cat /opt/data/gateway_state.json
+HERMES_HOME=/opt/data /usr/local/bin/hermes cron list 2>&1 || true
+grep -Ei 'slack|connected|token already|gateway running' /opt/data/logs/gateway.log | tail -30 || true
 ```
+
+If the user asked for an operational review or incident follow-up, append an English-only note to `/opt/data/logs/incident_log.md` with summary, root cause, actions, verification, and follow-up. Include the stale PID, whether it was zombie/defunct, the runtime used to clear locks, the new gateway PID, Slack state, and the recommendation to restart the Docker container from the host when PID 1 still has inherited old `/opt/hermes` cwd/env.
 
 Expected state file shape:
 
