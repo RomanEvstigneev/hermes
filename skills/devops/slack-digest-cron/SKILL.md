@@ -160,16 +160,52 @@ The `_write_cron_run_audit()` function is called inside `tick()`. The manual `cr
 
 ### Diagnosing silent delivery failures
 
-When a cron job shows `last_status: ok` but the Slack message never arrived, check:
+When a cron job shows `last_status: ok` but the Slack message never arrived, first check the job's `deliver` value in `cronjob(action='list')` or `/opt/data/cron/jobs.json`.
 
-```bash
-grep -i 'Send error\|channel_not_found\|Fallback send\|deliver' /opt/data/logs/gateway.log | tail -20
+Common cause found in Roman's setup:
+- `deliver: local` means the cron output is only saved under `/opt/data/cron/output/<job_id>/...` and is never sent to Slack, even if the prompt says to call `send_message`.
+- Cron runs inject a system instruction: do not call `send_message`; return the final response and let the cron delivery system handle delivery.
+- Fix by setting `deliver='slack:<channel_id>'` and changing the prompt to return only a Slack-ready message body, not to call `send_message`.
+
+Example fix:
+
+```text
+cronjob(action='update', job_id='<job_id>', deliver='slack:C0B18TP48JD', prompt='...return the Slack-ready message as your final response. Do not call send_message...')
 ```
 
-Common causes:
+Then inspect delivery errors:
+
+```bash
+grep -i 'Send error\|channel_not_found\|Fallback send\|deliver' /opt/data/logs/gateway.log /opt/data/logs/agent.log /opt/data/logs/errors.log | tail -40
+```
+
+Other common causes:
 - `channel_not_found` — bot not a member of the target channel, or wrong channel ID
 - `Slack app token already in use` — duplicate gateway process (stop old PID first)
-- `deliver: local` was set on the job — output saved only to `/opt/data/cron/output/`, never sent to Slack
+
+### Business-friendly backup notifications
+
+For Daily Git Auto-Commit notifications, Roman does not want raw path lists such as `skills/devops/...` or `cron/output/...` in Slack. Prefer an operator/business summary that explains what changed and why it matters: automation reliability, Slack delivery, memory/context maintenance, health reporting, configuration, or backup coverage.
+
+Implementation pattern:
+- Have the backup script output `Business impact hints:` derived from changed paths.
+- In the cron prompt, instruct the model to translate repository paths into practical impact and avoid raw file lists unless debugging.
+- Keep Slack output brief: files changed count, push success, then `Business summary:` bullets.
+
+### Test-running a cron job after a delivery fix
+
+Use `cronjob(action='run', job_id='<job_id>')` to trigger a test run. Important behavior: this does not execute synchronously; it sets `next_run_at` to now and the gateway's cron ticker picks it up on its next interval, usually within 60 seconds.
+
+Verification workflow:
+1. Run the job with `cronjob(action='run', job_id='<job_id>')`.
+2. Wait about 60-75 seconds.
+3. Re-run `cronjob(action='list')` and verify:
+   - `last_run_at` moved to the test-run time.
+   - `last_status` is `ok`.
+   - `last_delivery_error` is null.
+   - `deliver` is the intended Slack target, not `local`.
+4. Check `/opt/data/cron/output/<job_id>/` for the new output markdown file and read it to confirm the generated Slack message body.
+5. If Slack still did not receive it, search logs for `Send error`, `channel_not_found`, and `Fallback send`.
 
 ## Architecture: script= parameter injects data into cron prompt
 
@@ -250,6 +286,15 @@ text = re.sub(r"<@([A-Z0-9]+)>", lambda m: f"@{get_display_name(m.group(1))}", t
 ```
 
 ## Cron Slack delivery target
+
+Roman prefers clean cron Slack reports without wrapper/footer text. Keep `/opt/data/config.yaml` set to:
+
+```yaml
+cron:
+  wrap_response: false
+```
+
+This removes the automatic `Cronjob Response...` header and the `To stop or manage this job...` footer.
 
 Do NOT rely on the cron prompt to call `send_message`: cron injects a system instruction saying the final response will be delivered automatically and the agent must not call `send_message`. If `deliver='local'`, the output is saved only under `/opt/data/cron/output/...` and will not appear in Slack.
 

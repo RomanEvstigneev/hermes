@@ -9,3 +9,5 @@ Slack setup: bot monitors #founders and #hermes-home (home C0B18TP48JD). Cron: S
 Slack formatting: do NOT use markdown tables in Slack responses — Slack doesn't render them. Use bullet lists, numbered lists, or plaintext formatting instead.
 §
 Roman's container currently launches Hermes from /opt/hermes via /opt/hermes/.venv/bin/hermes with cwd /opt/hermes. Because cwd is on sys.path first, active CLI imports /opt/hermes/*.py (e.g. /opt/hermes/cli.py), not necessarily /usr/local/lib/hermes-agent edits. Check `pwdx <pid>` and module `__file__` before patching runtime behavior.
+§
+Cron Slack reports: set `cron.wrap_response: false`; Roman wants no “To stop or manage this job...” footer, only the report body.

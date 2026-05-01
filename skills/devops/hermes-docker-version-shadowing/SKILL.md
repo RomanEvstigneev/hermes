@@ -59,7 +59,7 @@ Avoid dumping full process environments because they can contain secrets; only i
 
 ## Fix pattern
 
-If the container entrypoint executes bare `hermes` and an older virtualenv appears earlier on PATH, change the entrypoint to use the intended absolute launcher and preserve the data directory:
+If the container entrypoint executes bare `hermes` and an older virtualenv appears earlier on PATH, change the entrypoint to use the intended absolute launcher and preserve the data directory. Check PID 1's environment too: `tr '\0' '\n' < /proc/1/environ | grep -E '^(PATH|HERMES_HOME)='`. In Roman's Docker deployment, PID 1 may keep `/opt/hermes/.venv/bin` first in PATH, so bare `hermes` in `/hermes.sh` keeps launching `/opt/hermes` v0.9 even when `/usr/local/bin/hermes` is v0.11+.
 
 ```bash
 export HERMES_HOME=/opt/data

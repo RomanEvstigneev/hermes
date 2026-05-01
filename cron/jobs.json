@@ -36,7 +36,7 @@
     {
       "id": "6eb9f1258267",
       "name": "Daily Git Auto-Commit",
-      "prompt": "You are Hermes bot. Above is the output from the daily git auto-commit script for the /opt/data repo.\n\nIMPORTANT: Respond ONLY in English.\n\nRead the STATUS line from the script output and return a brief Slack-ready notification message as your final response. Do not call send_message; the cron delivery system will deliver your final response automatically to Slack.\n\nIf STATUS is \"no_changes\", return:\n\":white_check_mark: *Daily backup* \u2014 no changes, nothing to commit.\"\n\nIf STATUS is \"pushed\", return a short message like:\n\":floppy_disk: *Daily backup pushed* \u2014 [date]\n\u2022 Modified: N files\n\u2022 Added: N files\n\u2022 Deleted: N files\n\nNotable changes:\n\u2022 [up to 5 most interesting changed files; skip bulk skills updates if there are many]\"\n\nIf STATUS is \"push_failed\", return:\n\":warning: *Daily backup FAILED* \u2014 commit was created but push failed. Manual intervention needed.\nError: [short error details]\"\n\nKeep it brief and informative.",
+      "prompt": "You are Hermes bot. Above is the output from the daily git auto-commit script for the /opt/data repo.\n\nIMPORTANT: Respond ONLY in English.\n\nRead the STATUS line from the script output and return a brief Slack-ready notification message as your final response. Do not call send_message; the cron delivery system will deliver your final response automatically to Slack.\n\nThe Slack message must be useful to a business/operator audience. Do NOT just list raw file paths like `skills/...` or `cron/output/...`. Instead, translate repository changes into a practical business summary: what capability, automation, reliability, memory, reporting, or configuration changed and why it matters. Use the \"Business impact hints\" section from the script output when present.\n\nIf STATUS is \"no_changes\", return:\n\":white_check_mark: *Daily backup* \u2014 no changes, nothing to commit.\"\n\nIf STATUS is \"pushed\", return a short message like:\n\":floppy_disk: *Daily backup pushed* \u2014 [date]\n\u2022 Changes saved: N files\n\u2022 Backup pushed to GitHub successfully\n\n*Business summary:*\n\u2022 [practical impact/change 1]\n\u2022 [practical impact/change 2]\n\u2022 [practical impact/change 3]\"\n\nIf STATUS is \"push_failed\", return:\n\":warning: *Daily backup FAILED* \u2014 commit was created but push failed. Manual intervention needed.\nError: [short error details]\"\n\nKeep it brief, concrete, and operator-friendly.",
       "skills": [],
       "skill": null,
       "model": null,
@@ -51,7 +51,7 @@
       "schedule_display": "0 0 * * *",
       "repeat": {
         "times": null,
-        "completed": 1
+        "completed": 2
       },
       "enabled": true,
       "state": "scheduled",
@@ -59,7 +59,7 @@
       "paused_reason": null,
       "created_at": "2026-04-30T13:08:59.374230+00:00",
       "next_run_at": "2026-05-02T00:00:00+00:00",
-      "last_run_at": "2026-05-01T00:00:44.759392+00:00",
+      "last_run_at": "2026-05-01T05:45:50.396114+00:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -199,5 +199,5 @@
       "origin": null
     }
   ],
-  "updated_at": "2026-05-01T05:45:45.274107+00:00"
+  "updated_at": "2026-05-01T05:48:10.349730+00:00"
 }

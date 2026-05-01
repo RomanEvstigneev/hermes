@@ -209,7 +209,7 @@ security:
     domains: []
     shared_files: []
 cron:
-  wrap_response: true
+  wrap_response: false
 logging:
   level: INFO
   max_size_mb: 5
