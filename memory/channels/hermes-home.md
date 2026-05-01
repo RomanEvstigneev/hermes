@@ -1,7 +1,7 @@
 # #hermes-home
 Channel ID: C0B18TP48JD
 Type: private
-Last updated: 2026-04-30
+Last updated: 2026-05-01
 
 ## Purpose / context
 Private channel for Hermes bot interaction. Bot delivers daily digests,

@@ -150,16 +150,16 @@
       "schedule_display": "0 7 1 * *",
       "repeat": {
         "times": null,
-        "completed": 0
+        "completed": 1
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-04-30T13:26:28.708082+00:00",
-      "next_run_at": "2026-05-01T07:00:00+00:00",
-      "last_run_at": null,
-      "last_status": null,
+      "next_run_at": "2026-06-01T07:00:00+00:00",
+      "last_run_at": "2026-05-01T07:02:08.649395+00:00",
+      "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
       "deliver": "local",
@@ -199,5 +199,5 @@
       "origin": null
     }
   ],
-  "updated_at": "2026-05-01T05:48:10.349730+00:00"
+  "updated_at": "2026-05-01T07:02:08.650141+00:00"
 }

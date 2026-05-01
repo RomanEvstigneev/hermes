@@ -1,7 +1,7 @@
 # #website
 Channel ID: C0ACL3L65PX
 Type: public
-Last updated: 2026-04-30
+Last updated: 2026-05-01
 
 ## Purpose / context
 Website-related discussions — design, copy, development, updates.

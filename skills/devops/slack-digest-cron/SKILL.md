@@ -115,7 +115,7 @@ If the user needs a full audit trail, recommend adding explicit JSONL logging su
 
 For a reusable "report whether other cron jobs/logs were successful" workflow:
 
-1. Patch the live cron scheduler source that is actually imported by the running gateway (verify with `ps`, `pwdx <pid>`, and module `__file__`; Roman's Docker setup often imports `/opt/hermes`, not `/usr/local/lib/hermes-agent`).
+1. Patch the live cron scheduler source that is actually imported by the running gateway (verify with `ps`, `pwdx <pid>`, and module `__file__`). Roman's Docker entrypoint should `cd /usr/local/lib/hermes-agent` before launching Hermes so `/usr/local/lib/hermes-agent/cron/scheduler.py` is imported; if cwd is still `/opt/hermes`, the old tree can shadow the upgraded package.
 2. Add per-run JSONL audit logging from `cron.scheduler.tick()` after `save_job_output()` and delivery, writing records to:
    ```text
    /opt/data/logs/cron_runs/YYYY-MM-DD.jsonl
@@ -142,7 +142,7 @@ Reports: /opt/data/logs/cron_health_reports/YYYY-MM-DD.json
 Audit input: /opt/data/logs/cron_runs/YYYY-MM-DD.jsonl   (empty until gateway restart)
 ```
 
-Important pitfall: after patching `/opt/hermes/cron/scheduler.py`, the already-running gateway process must be cleanly restarted before new cron audit logging is active. Do not start a second gateway; Slack will fail with `Slack app token already in use`. Use the existing deployment's restart path.
+Important pitfall: after patching live scheduler code, the already-running gateway process must be cleanly restarted before new cron audit logging is active. Do not start a second gateway; Slack will fail with `Slack app token already in use`. Use the existing deployment's restart path, and verify that the restarted process imports from `/usr/local/lib/hermes-agent`, not the stale `/opt/hermes` tree.
 
 ### Why cron_runs/ stays empty even after patching scheduler.py
 

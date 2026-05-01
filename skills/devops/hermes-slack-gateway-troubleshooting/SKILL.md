@@ -53,15 +53,16 @@ ps -o pid,ppid,stat,lstart,cmd -p <pid>
 This means a stale scoped lock is blocking Slack startup. Clear scoped gateway locks and restart the gateway:
 
 ```bash
-HERMES_HOME=/opt/data /opt/hermes/.venv/bin/python3 - <<'PY'
+HERMES_HOME=/opt/data /usr/local/lib/hermes-agent/venv/bin/python3 - <<'PY'
 import sys
-sys.path.insert(0, '/opt/hermes')
+sys.path.insert(0, '/usr/local/lib/hermes-agent')
 from gateway.status import release_all_scoped_locks, _get_lock_dir
-print('lock_dir', _get_lock_dir())
-print('removed_locks', release_all_scoped_locks())
+print('Lock dir:', _get_lock_dir())
+print('Released:', release_all_scoped_locks())
 PY
+HERMES_HOME=/opt/data /usr/local/bin/hermes gateway run
 
-HERMES_HOME=/opt/data nohup /opt/hermes/.venv/bin/hermes gateway run >> /opt/data/logs/gateway.log 2>&1 &
+# If launching from an agent tool session, start it as a tracked background process with the terminal tool rather than using shell-level nohup/disown. Do not use the stale /opt/hermes launcher.
 ```
 
 Then verify:
@@ -89,7 +90,7 @@ Expected state file shape:
 
 ## Roman's Docker/runtime path pitfall
 
-Roman's container launches Hermes from `/opt/hermes` via `/opt/hermes/.venv/bin/hermes`, while `/usr/local/bin/hermes` may use a different installed source tree. Because cwd can affect `sys.path`, two `hermes gateway status` commands may disagree.
+Roman's container previously launched Hermes from `/opt/hermes` via `/opt/hermes/.venv/bin/hermes`, while `/usr/local/bin/hermes` used a different installed source tree. The intended post-upgrade setup is `/hermes.sh` launching `/usr/local/bin/hermes` after `cd /usr/local/lib/hermes-agent`; if cwd stays `/opt/hermes`, Python can still import stale modules because cwd is first on `sys.path`.
 
 Observed pitfall:
 

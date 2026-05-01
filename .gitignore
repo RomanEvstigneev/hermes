@@ -11,12 +11,27 @@ interrupt_debug.log
 # Cache
 audio_cache/
 image_cache/
+cache/
 models_dev_cache.json
 
 # Database state
 state.db
 state.db-shm
 state.db-wal
+kanban.db
+
+# Runtime gateway/process state
+gateway.pid
+gateway_state.json
+processes.json
+channel_directory.json
+pastes/
+
+# Backups and generated Python bytecode
+backups/
+__pycache__/
+*.pyc
+
 
 # Checkpoints & sandboxes (can be huge)
 checkpoints/

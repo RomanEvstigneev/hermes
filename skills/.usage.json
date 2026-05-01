@@ -95,6 +95,42 @@
     "use_count": 0,
     "view_count": 1
   },
+  "hermes-agent-verification": {
+    "archived_at": null,
+    "created_at": "2026-05-01T06:25:00.393438+00:00",
+    "last_patched_at": null,
+    "last_used_at": null,
+    "last_viewed_at": "2026-05-01T06:25:00.393448+00:00",
+    "patch_count": 0,
+    "pinned": false,
+    "state": "active",
+    "use_count": 0,
+    "view_count": 1
+  },
+  "hermes-docker-version-shadowing": {
+    "archived_at": null,
+    "created_at": "2026-05-01T06:25:00.395516+00:00",
+    "last_patched_at": "2026-05-01T07:00:41.321474+00:00",
+    "last_used_at": "2026-05-01T06:54:25.752027+00:00",
+    "last_viewed_at": "2026-05-01T06:54:25.750636+00:00",
+    "patch_count": 5,
+    "pinned": false,
+    "state": "active",
+    "use_count": 2,
+    "view_count": 1
+  },
+  "hermes-slack-gateway-troubleshooting": {
+    "archived_at": null,
+    "created_at": "2026-05-01T06:28:01.298731+00:00",
+    "last_patched_at": "2026-05-01T06:56:46.236317+00:00",
+    "last_used_at": "2026-05-01T06:56:12.792191+00:00",
+    "last_viewed_at": "2026-05-01T06:56:12.790858+00:00",
+    "patch_count": 3,
+    "pinned": false,
+    "state": "active",
+    "use_count": 1,
+    "view_count": 1
+  },
   "node-inspect-debugger": {
     "archived_at": null,
     "created_at": "2026-04-30T13:46:42.992982+00:00",
@@ -158,10 +194,10 @@
   "slack-digest-cron": {
     "archived_at": null,
     "created_at": "2026-04-30T13:46:59.632236+00:00",
-    "last_patched_at": null,
+    "last_patched_at": "2026-05-01T06:27:54.168617+00:00",
     "last_used_at": null,
     "last_viewed_at": "2026-04-30T13:46:59.632248+00:00",
-    "patch_count": 0,
+    "patch_count": 2,
     "pinned": false,
     "state": "active",
     "use_count": 0,

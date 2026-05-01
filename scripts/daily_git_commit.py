@@ -74,7 +74,8 @@ def main():
     # Filter out runtime/temp files we never want to commit
     IGNORE_PATTERNS = [
         "gateway.pid", "gateway_state.json", "processes.json",
-        "pastes/", "channel_directory.json",
+        "pastes/", "channel_directory.json", "kanban.db",
+        "backups/", "cache/", "__pycache__/", ".pyc",
     ]
     def should_ignore(path):
         for pat in IGNORE_PATTERNS:
