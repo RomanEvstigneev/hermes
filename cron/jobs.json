@@ -36,7 +36,7 @@
     {
       "id": "6eb9f1258267",
       "name": "Daily Git Auto-Commit",
-      "prompt": "You are Hermes bot. Above is the output from the daily git auto-commit script for the /opt/data repo.\n\nIMPORTANT: Respond ONLY in English.\n\nRead the STATUS line from the script output and send a message to Slack channel C0B18TP48JD using send_message tool with target \"slack:C0B18TP48JD\".\n\nIf STATUS is \"no_changes\":\nSend: \":white_check_mark: *Daily backup* \u2014 no changes, nothing to commit.\"\n\nIf STATUS is \"pushed\":\nSend a short message like:\n\":floppy_disk: *Daily backup pushed* \u2014 [date]\n\u2022 Modified: N files\n\u2022 Added: N files  \n\u2022 Deleted: N files\n[list up to 5 most interesting changed files, skip bulk skills updates if there are many]\"\n\nIf STATUS is \"push_failed\":\nSend: \":warning: *Daily backup FAILED* \u2014 commit was created but push failed. Manual intervention needed.\nError: [error details]\"\n\nKeep it brief and informative.",
+      "prompt": "You are Hermes bot. Above is the output from the daily git auto-commit script for the /opt/data repo.\n\nIMPORTANT: Respond ONLY in English.\n\nRead the STATUS line from the script output and return a brief Slack-ready notification message as your final response. Do not call send_message; the cron delivery system will deliver your final response automatically to Slack.\n\nIf STATUS is \"no_changes\", return:\n\":white_check_mark: *Daily backup* \u2014 no changes, nothing to commit.\"\n\nIf STATUS is \"pushed\", return a short message like:\n\":floppy_disk: *Daily backup pushed* \u2014 [date]\n\u2022 Modified: N files\n\u2022 Added: N files\n\u2022 Deleted: N files\n\nNotable changes:\n\u2022 [up to 5 most interesting changed files; skip bulk skills updates if there are many]\"\n\nIf STATUS is \"push_failed\", return:\n\":warning: *Daily backup FAILED* \u2014 commit was created but push failed. Manual intervention needed.\nError: [short error details]\"\n\nKeep it brief and informative.",
       "skills": [],
       "skill": null,
       "model": null,
@@ -51,7 +51,7 @@
       "schedule_display": "0 0 * * *",
       "repeat": {
         "times": null,
-        "completed": 0
+        "completed": 1
       },
       "enabled": true,
       "state": "scheduled",
@@ -59,11 +59,11 @@
       "paused_reason": null,
       "created_at": "2026-04-30T13:08:59.374230+00:00",
       "next_run_at": "2026-05-02T00:00:00+00:00",
-      "last_run_at": null,
-      "last_status": null,
+      "last_run_at": "2026-05-01T00:00:44.759392+00:00",
+      "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
-      "deliver": "local",
+      "deliver": "slack:C0B18TP48JD",
       "origin": null
     },
     {
@@ -199,5 +199,5 @@
       "origin": null
     }
   ],
-  "updated_at": "2026-05-01T00:00:32.778565+00:00"
+  "updated_at": "2026-05-01T05:45:45.274107+00:00"
 }

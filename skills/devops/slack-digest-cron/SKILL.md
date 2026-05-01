@@ -64,6 +64,18 @@ load_env_file()
 
 Use `cronjob(action='list')` first for current status. It reports each job's `last_run_at`, `last_status`, `last_delivery_error`, `next_run_at`, enabled/state, and script path.
 
+Quick workflow for "did the overnight cron jobs run successfully?":
+1. Get the current UTC time with `date -u` so you can distinguish overdue jobs from jobs not due yet.
+2. Run `cronjob(action='list')` and classify each job:
+   - `last_run_at` after the expected scheduled time + `last_status: ok` + no `last_delivery_error` = successful.
+   - `next_run_at` still in the future and `last_run_at` null = not due yet, not failed.
+   - `last_status` non-ok or `last_delivery_error` non-null = investigate.
+3. Check `/opt/data/logs/cron_runs/YYYY-MM-DD.jsonl` for structured audit records if present.
+4. Read `/opt/data/cron/output/<job_id>/<timestamp>.md` for the exact script output and final response.
+5. For git backup jobs, verify the commit directly in `/opt/data` with `git log -1 --oneline --date=iso` and `git status --short`; untracked files after the run may simply be new runtime files created after the backup.
+6. If Slack delivery is relevant, inspect `last_delivery_error` and scan `gateway.log` / `errors.log` for `Send error`, `channel_not_found`, or `Slack app token already in use`.
+7. If a log says "Another gateway instance is already running", check `ps -p <PID> -o pid,ppid,stat,lstart,cmd`; if that PID is a healthy running gateway, treat it as a duplicate start attempt, not automatically as a cron failure.
+
 Persistent cron definitions and last status are stored in:
 
 ```text
