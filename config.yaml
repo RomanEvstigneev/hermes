@@ -1,10 +1,12 @@
 model:
-  default: deepseek/deepseek-v4-flash
-  provider: openrouter
-  base_url: https://openrouter.ai/api/v1
+  default: gpt-5.5
+  provider: openai-codex
+  base_url: https://chatgpt.com/backend-api/codex
   api_mode: chat_completions
 providers: {}
-fallback_providers: []
+fallback_providers:
+- provider: openrouter
+  model: anthropic/claude-sonnet-4.6
 credential_pool_strategies: {}
 toolsets:
 - hermes-cli
@@ -183,12 +185,6 @@ skills:
   external_dirs: []
 honcho: {}
 timezone: ''
-slack:
-  require_mention: true
-  allowed_users: U09NJ1H6V6K,U0ABC4S3HC5
-  allowed_channels: ''
-  auto_thread: true
-  reply_prefix: ""
 discord:
   require_mention: true
   free_response_channels: ''
@@ -221,10 +217,19 @@ logging:
 network:
   force_ipv4: false
 _config_version: 17
+slack:
+  require_mention: true
+  allowed_users: U09NJ1H6V6K,U0ABC4S3HC5
+  allowed_channels: ''
+  auto_thread: true
+  reply_prefix: ''
 session_reset:
   mode: both
   idle_minutes: 1440
   at_hour: 4
+onboarding:
+  seen:
+    busy_input_prompt: true
 
 # ── Fallback Model ────────────────────────────────────────────────────
 # Automatic provider failover when primary is unavailable.

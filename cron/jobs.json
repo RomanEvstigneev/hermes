@@ -42,7 +42,7 @@
       "model": null,
       "provider": null,
       "base_url": null,
-      "script": "scripts/daily_git_commit.py",
+      "script": "daily_git_commit.py",
       "schedule": {
         "kind": "cron",
         "expr": "0 0 * * *",
@@ -58,7 +58,7 @@
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-04-30T13:08:59.374230+00:00",
-      "next_run_at": "2026-05-01T00:00:00+00:00",
+      "next_run_at": "2026-05-02T00:00:00+00:00",
       "last_run_at": null,
       "last_status": null,
       "last_error": null,
@@ -75,7 +75,7 @@
       "model": null,
       "provider": null,
       "base_url": null,
-      "script": "scripts/slack_memory_update.py",
+      "script": "slack_memory_update.py",
       "schedule": {
         "kind": "cron",
         "expr": "5 8 * * *",
@@ -108,7 +108,7 @@
       "model": null,
       "provider": null,
       "base_url": null,
-      "script": "scripts/slack_memory_weekly.py",
+      "script": "slack_memory_weekly.py",
       "schedule": {
         "kind": "cron",
         "expr": "0 9 * * 0",
@@ -141,7 +141,7 @@
       "model": null,
       "provider": null,
       "base_url": null,
-      "script": "scripts/slack_memory_monthly.py",
+      "script": "slack_memory_monthly.py",
       "schedule": {
         "kind": "cron",
         "expr": "0 7 1 * *",
@@ -164,7 +164,40 @@
       "last_delivery_error": null,
       "deliver": "local",
       "origin": null
+    },
+    {
+      "id": "976c82c577dd",
+      "name": "Daily Cron Health Report",
+      "prompt": "You are Hermes bot producing a Slack-ready daily cron health report. Above is a JSON report about Hermes cron job execution health for the last 24 hours.\n\nIMPORTANT: Respond ONLY in English. Never use Russian or any other language.\n\nDELIVERY: Do not call send_message. Your final response will be automatically delivered to Slack channel C0B18TP48JD by the cron delivery system.\n\nTask: write a concise daily cron health report.\n\nFormat for Slack (do NOT use markdown tables):\n\n:bar_chart: *Daily Cron Health Report* \u2014 [window_start] to [window_end] UTC\n\n*Overall status:* [Healthy / Degraded / Failing]\n\u2022 Jobs configured: N total, N enabled\n\u2022 Runs observed: N total, N successful, N failed/delivery-error\n\u2022 JSON audit log: `/opt/data/logs/cron_runs/YYYY-MM-DD.jsonl`\n\u2022 Full report: `[saved_report_path]`\n\n*Per-job status:*\n\u2022 [job name] \u2014 [OK / FAILED / NO RUN IN WINDOW / NOT DUE] \u2014 last run: [timestamp or never]; next: [timestamp]\n\nIf there were errors, add:\n\n:warning: *Errors detected:*\n\u2022 [job name] \u2014 [error or delivery_error, short actionable summary]\n\u2022 Relevant log excerpt: [1-3 shortest relevant lines]\n\nIf there were no errors, add:\n:white_check_mark: No cron job errors or delivery failures detected in this window.\n\nRules:\n- English only.\n- Keep it brief but actionable.\n- Mention delivery errors separately from job execution errors.\n- Do not include huge tracebacks; summarize and point to the JSON report path.\n- If there are no JSON run records yet, explain that JSON audit logging has just been enabled and future runs should appear there.\n- Return only the Slack message body as your final response.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "cron_health_report.py",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 19 * * *",
+        "display": "0 19 * * *"
+      },
+      "schedule_display": "0 19 * * *",
+      "repeat": {
+        "times": null,
+        "completed": 3
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-04-30T19:33:59.340934+00:00",
+      "next_run_at": "2026-05-01T19:00:00+00:00",
+      "last_run_at": "2026-04-30T19:44:36.339018+00:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "slack:C0B18TP48JD",
+      "origin": null
     }
   ],
-  "updated_at": "2026-04-30T13:27:24.192337+00:00"
+  "updated_at": "2026-05-01T00:00:32.778565+00:00"
 }

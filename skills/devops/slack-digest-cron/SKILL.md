@@ -1,8 +1,8 @@
 ---
 name: slack-digest-cron
-description: "Create a scheduled Slack channel digest using cron + data-collection script. Reads channel history via Slack API and has Hermes summarize it."
-version: 1.0.0
-tags: [slack, cron, digest, summary, notifications]
+description: "Create a scheduled Slack channel digest using cron + data-collection script. Reads channel history via Slack API and has Hermes summarize it. Includes a file-based persistent memory system for channels and people."
+version: 1.1.0
+tags: [slack, cron, digest, summary, notifications, memory]
 ---
 
 # Slack Daily Digest via Cron
@@ -19,6 +19,28 @@ if VENV_SITE_PACKAGES not in sys.path:
     sys.path.insert(0, VENV_SITE_PACKAGES)
 from slack_sdk import WebClient
 ```
+
+## Key Discovery: /opt/data/.env contains MASKED values (***) when read directly
+
+The .env file is written by Hermes with `***` placeholders for security — reading it
+with open() or a plain shell `cat` gives you `SLACK_BOT_TOKEN=***`, not the real token.
+
+The real token is loaded into memory only when the hermes venv's dotenv loader runs.
+To access it programmatically, use the hermes venv Python:
+
+```python
+# Script must be run with: /usr/local/lib/hermes-agent/venv/bin/python3
+import sys
+sys.path.insert(0, "/usr/local/lib/hermes-agent/venv/lib/python3.11/site-packages")
+from dotenv import load_dotenv
+from pathlib import Path
+import os
+load_dotenv(Path("/opt/data/.env"), override=True)
+token = os.environ["SLACK_BOT_TOKEN"]  # now the real token
+```
+
+OR just run scripts with the venv python directly and let dotenv do the work.
+The `source /opt/data/.env` shell approach does NOT work (same *** values in the file).
 
 ## Key Discovery: cron scripts must load .env manually
 
@@ -38,6 +60,105 @@ def load_env_file():
 load_env_file()
 ```
 
+## Cron logging and state inspection
+
+Use `cronjob(action='list')` first for current status. It reports each job's `last_run_at`, `last_status`, `last_delivery_error`, `next_run_at`, enabled/state, and script path.
+
+Persistent cron definitions and last status are stored in:
+
+```text
+/opt/data/cron/jobs.json
+```
+
+Each job entry includes:
+- `last_run_at`
+- `last_status`
+- `last_error`
+- `last_delivery_error`
+- `repeat.completed`
+- `next_run_at`
+
+This is a last-known-state file, not a complete historical audit trail of every run.
+
+Runtime logs are in:
+
+```text
+/opt/data/logs/agent.log      # cron.scheduler lines, run_agent, tool/API logs
+/opt/data/logs/errors.log     # ERROR/WARNING entries and tracebacks
+/opt/data/logs/gateway.log    # gateway/platform + cron scheduler process logs
+```
+
+Search examples:
+
+```text
+search_files(path="/opt/data/logs", pattern="cron|job_id|Running job|last_delivery_error|<job name>")
+read_file(path="/opt/data/cron/jobs.json")
+```
+
+Pitfall: `/opt/data/state.db` may not contain cron job tables; cron state is file-backed in `/opt/data/cron/jobs.json`. Do not assume sqlite contains cron history.
+
+If the user needs a full audit trail, recommend adding explicit JSONL logging such as `/opt/data/logs/cron_runs/YYYY-MM-DD.jsonl` with timestamp, job_id, name, script stdout/stderr, status, final response, and delivery error.
+
+### Daily cron health report pattern
+
+For a reusable "report whether other cron jobs/logs were successful" workflow:
+
+1. Patch the live cron scheduler source that is actually imported by the running gateway (verify with `ps`, `pwdx <pid>`, and module `__file__`; Roman's Docker setup often imports `/opt/hermes`, not `/usr/local/lib/hermes-agent`).
+2. Add per-run JSONL audit logging from `cron.scheduler.tick()` after `save_job_output()` and delivery, writing records to:
+   ```text
+   /opt/data/logs/cron_runs/YYYY-MM-DD.jsonl
+   ```
+3. Include at least: `schema_version`, `event`, `job_id`, `job_name`, `session_id`, `started_at`, `ended_at`, `success`, `status`, `error`, `delivery_error`, `output_file`, `final_response`, `full_output_doc`, and `traceback`.
+4. Add a collector script such as:
+   ```text
+   /opt/data/scripts/cron_health_report.py
+   ```
+   It should read `/opt/data/cron/jobs.json`, the JSONL audit directory, and excerpts from `agent.log`, `errors.log`, and `gateway.log`; save snapshots under:
+   ```text
+   /opt/data/logs/cron_health_reports/YYYY-MM-DD.json
+   ```
+5. Create a daily cron job with `script='scripts/cron_health_report.py'`, `deliver='local'`, and a prompt that sends a concise Slack report.
+
+Known instance in Roman's setup:
+```text
+Name: Daily Cron Health Report
+Job ID: 976c82c577dd
+Schedule: 0 19 * * *
+Script: cron_health_report.py         <-- bare filename, NOT scripts/cron_health_report.py
+Deliver: slack:C0B18TP48JD
+Reports: /opt/data/logs/cron_health_reports/YYYY-MM-DD.json
+Audit input: /opt/data/logs/cron_runs/YYYY-MM-DD.jsonl   (empty until gateway restart)
+```
+
+Important pitfall: after patching `/opt/hermes/cron/scheduler.py`, the already-running gateway process must be cleanly restarted before new cron audit logging is active. Do not start a second gateway; Slack will fail with `Slack app token already in use`. Use the existing deployment's restart path.
+
+### Why cron_runs/ stays empty even after patching scheduler.py
+
+The `_write_cron_run_audit()` function is called inside `tick()`. The manual `cronjob(action='run')` path only sets `next_run_at = now` in jobs.json and waits for the scheduler's 60-second tick loop to pick it up. The tick loop runs inside the already-running gateway process — which loaded the old scheduler code at startup. Patching the file on disk has no effect until the gateway process is restarted.
+
+**Bottom line:** JSONL audit records will only appear in `/opt/data/logs/cron_runs/` after the gateway is cleanly restarted (stop existing PID, start fresh once).
+
+### Top 3 logging gaps to fix
+
+1. **JSONL cron audit missing** — `/opt/data/logs/cron_runs/` is always empty because the running gateway loaded old code. Fix: clean gateway restart. Unblocks the health report's ability to read structured run history.
+
+2. **Cron delivery failures silently swallowed** — Slack delivery errors (e.g. `channel_not_found`) appear in `gateway.log` but are not surfaced to the user. Fix: update `cron_health_report.py` to scan `gateway.log` for `Send error|channel_not_found|Fallback send also failed` patterns and include them in the daily health report.
+
+3. **Gateway restart events untracked** — The gateway can restart 10+ times a day (exit code 1 → systemd/Docker revives it). There is no structured restart count log. Fix: append a timestamped line to `/opt/data/logs/gateway_restarts.log` inside the startup script (`/hermes.sh`) on each launch.
+
+### Diagnosing silent delivery failures
+
+When a cron job shows `last_status: ok` but the Slack message never arrived, check:
+
+```bash
+grep -i 'Send error\|channel_not_found\|Fallback send\|deliver' /opt/data/logs/gateway.log | tail -20
+```
+
+Common causes:
+- `channel_not_found` — bot not a member of the target channel, or wrong channel ID
+- `Slack app token already in use` — duplicate gateway process (stop old PID first)
+- `deliver: local` was set on the job — output saved only to `/opt/data/cron/output/`, never sent to Slack
+
 ## Architecture: script= parameter injects data into cron prompt
 
 The `script` parameter of `cronjob(action='create')` runs a Python script before
@@ -48,13 +169,13 @@ pattern for "collect data, then have LLM process it":
 cronjob(action='create',
     name='Slack Daily Digest',
     schedule='0 8 * * *',            # 08:00 UTC daily — morning digest of previous day
-    script='scripts/slack_daily_digest.py',  # relative to /opt/data/
+    script='slack_daily_digest.py',  # basename/relative to /opt/data/scripts/, not scripts/...
     prompt='... analyze the data above and send summary to slack:CHANNEL_ID ...',
     deliver='local',  # bot sends to Slack itself via send_message tool
 )
 ```
 
-Place scripts at: `/opt/data/scripts/your_script.py`
+Place scripts at: `/opt/data/scripts/your_script.py`, but set the cron `script` field to `your_script.py`. Do NOT use `scripts/your_script.py`, because the scheduler resolves it as `/opt/data/scripts/scripts/your_script.py` and the job fails with "Script not found".
 
 ## Slack API: finding channels the bot is a member of
 
@@ -116,10 +237,17 @@ import re
 text = re.sub(r"<@([A-Z0-9]+)>", lambda m: f"@{get_display_name(m.group(1))}", text)
 ```
 
-## Cron deliver='local' when the bot sends to Slack itself
+## Cron Slack delivery target
 
-Set `deliver='local'` so Hermes doesn't try to route the final response anywhere —
-the prompt instructs Hermes to call `send_message(target='slack:CHANNEL_ID')` itself.
+Do NOT rely on the cron prompt to call `send_message`: cron injects a system instruction saying the final response will be delivered automatically and the agent must not call `send_message`. If `deliver='local'`, the output is saved only under `/opt/data/cron/output/...` and will not appear in Slack.
+
+For Slack notifications, set an explicit delivery target, e.g.:
+
+```python
+deliver='slack:C0B18TP48JD'
+```
+
+Then make the prompt return only the Slack-ready message body. Do not tell it to call `send_message`.
 
 ## Rate limiting
 
@@ -127,19 +255,190 @@ Add `time.sleep(0.3-0.5)` between API calls to avoid Slack rate limits (Tier 3: 
 
 ## Cron prompt: always specify output language explicitly
 
-Cron jobs run without user context and will default to the user's profile language
-(e.g. Russian for Russian-speaking users). If the digest should be in English,
-say so explicitly at the top AND in the rules section of the prompt:
+As of the global English-only policy patch (`ENGLISH_ONLY_POLICY` in `prompt_builder.py`), Hermes injects an English-only rule into every system prompt automatically — including cron sessions. However, cron jobs run with `skip_memory=True` and a minimal context, so an explicit reminder in the prompt is still best practice to be safe:
 
 ```
 IMPORTANT: Respond ONLY in English. Never use any other language regardless
 of what language the channel messages are written in.
 ```
 
-Without this, the LLM will mirror the language of the Slack messages or the
-user's memory profile — which may not be what's wanted for a team digest.
+Without the global policy (or before a gateway restart loads it), the LLM will mirror the language of the Slack messages or the user's memory profile — which may not be what's wanted for a team digest.
+
+---
+
+## Persistent Memory System for Channels & People
+
+Use when: user wants the bot to remember ongoing discussions, who people are,
+and keep that knowledge accurate over time via automated lifecycle rituals.
+
+### File structure
+
+```
+/opt/data/memory/
+  people/<firstname-lastname>.md    # one per person
+  channels/<channel-name>.md        # one per channel
+  archive/people/                   # inactive people (90+ days)
+  archive/channels/                 # inactive channels
+  MEMORY_INDEX.md                   # auto-updated index
+```
+
+### People file format
+
+```markdown
+# Full Name
+Slack ID: UXXXXXXX
+Role: [role]
+Last updated: YYYY-MM-DD
+Last seen: YYYY-MM-DD
+
+## Confirmed facts
+- [fact] (#channel, seen Nx, last YYYY-MM-DD)
+
+## Pending confirmation
+- [YYYY-MM-DD] [fact] — 1x seen
+
+## Stale (not seen 30+ days)
+- [fact] — last seen YYYY-MM-DD
+
+## Manual overrides (protected — never auto-deleted)
+- [fact]
+```
+
+### Channel file format
+
+```markdown
+# #channel-name
+Channel ID: CXXXXXXXX
+Type: public/private
+Last updated: YYYY-MM-DD
+
+## Purpose / context
+## Recurring topics
+## Active open questions
+## Key decisions (last 90 days)
+## Regular participants
+## Stale topics (not discussed 30+ days)
+```
+
+### Fact lifecycle
+
+```
+Slack message → [candidate: Pending, 1x seen]
+    → seen again within 14 days → [Confirmed]
+    → not seen for 30 days → [Stale]
+    → not seen for 90 days → [Archived]
+    (manual facts bypass this entirely)
+```
+
+### Four cron rituals
+
+| Cron | Schedule | Script | Purpose |
+|------|----------|--------|---------|
+| Daily enrichment | 08:05 UTC | slack_memory_update.py | Add new facts, promote confirmed |
+| Weekly review | 09:00 UTC Sunday | slack_memory_weekly.py | Prune expired pending, mark stale |
+| Monthly deep clean | 07:00 UTC 1st | slack_memory_monthly.py | Validate against evidence, archive |
+| Git auto-commit | 00:00 UTC | daily_git_commit.py | Version-control all memory changes |
+
+Run enrichment 5 minutes AFTER digest so they don't collide.
+
+### Injecting memory into digest context
+
+At the end of the digest data-collection script, output the memory files:
+
+```python
+def output_memory_context():
+    memory_dir = "/opt/data/memory"
+    if not os.path.exists(memory_dir):
+        return
+    print("\n=== MEMORY CONTEXT ===\n")
+    for subdir in ("people", "channels"):
+        dirpath = os.path.join(memory_dir, subdir)
+        if not os.path.exists(dirpath):
+            continue
+        for fname in sorted(os.listdir(dirpath)):
+            if fname.endswith(".md"):
+                with open(os.path.join(dirpath, fname)) as f:
+                    print(f"--- memory/{subdir}/{fname} ---")
+                    print(f.read())
+
+if __name__ == "__main__":
+    main()
+    output_memory_context()
+```
+
+This means the digest cron agent knows who people are and what recurring topics exist —
+making its summaries much richer without any extra API calls.
+
+### Cron prompt rules for memory enrichment
+
+Key instructions to include in daily enrichment prompt:
+- Fact goes to Pending first — only moves to Confirmed if seen 2+ times
+- Never delete from Confirmed or Pending — only weekly review does that
+- Never touch Manual overrides section
+- Create new person file on first encounter (use Slack ID from "USERS SEEN TODAY" section)
+- Update "Last seen" dates on every run
+- Promote Pending → Confirmed if fact already exists in Pending from a previous day
+
+### Manual override commands (Phase 5 / live override)
+
+Teach the bot to respond to these in the gateway:
+- `@hermes remember: [fact about person or channel]`
+- `@hermes forget: [person] / [topic]`
+
+Manual facts are tagged `[manual]` and never auto-deleted by any cron job.
+
+### Seeding known people
+
+Pre-create people files with known facts before the cron starts.
+Use `## Manual overrides` section for founder/role info so it's never wiped.
+
+```markdown
+## Manual overrides (protected — never auto-deleted)
+- CEO / Co-founder, leads product and engineering
+```
+
+### Pitfall: Sergey's Slack ID may be unknown at seed time
+
+If you don't know someone's Slack ID when creating the seed file, set it to
+`(unknown — to be discovered from Slack activity)`. The enrichment cron will
+fill it in when it first sees that person in a message (from the "USERS SEEN TODAY"
+section output by the data collection script).
+
+---
+
+## Looking up a user's messages across channels
+
+Use case: "read all messages from @Person and summarize their responsibilities."
+
+Step 1 — resolve the Slack user ID by name:
+```python
+data = slack_api("users.list", {})
+for m in data.get("members", []):
+    name = m.get("real_name", "") + " " + m.get("profile", {}).get("display_name", "")
+    if "fedor" in name.lower() or "barbarin" in name.lower():
+        print(m["id"], m["real_name"])
+```
+
+Step 2 — get bot-member channels (see get_bot_channels above).
+
+Step 3 — filter conversations.history by user ID:
+```python
+messages = data.get("messages", [])
+user_msgs = [m for m in messages if m.get("user") == TARGET_USER_ID]
+```
+
+Note: Slack's search.messages API (which could filter by user directly) requires
+user OAuth tokens, not bot tokens. The manual filter approach above is the
+correct pattern for bot tokens.
+
+---
 
 ## Pitfalls
+
+- `conversations.list` with `types=public_channel,private_channel` can time out (60s+)
+  when called from a plain shell curl with `source /opt/data/.env` — the source command
+  doesn't actually load the real tokens (they're masked as ***). The call hangs or fails silently.
+  Always use the hermes venv python with dotenv to load the real token, then urllib or slack_sdk.
 
 - `conversations.history` requires the bot to be a member — `not_in_channel` error otherwise
 - Getting channels for yesterday: use UTC, not local time, unless user specifies timezone

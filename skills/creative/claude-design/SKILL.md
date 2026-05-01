@@ -10,7 +10,98 @@ metadata:
     related_skills: [design-md, popular-web-designs, excalidraw, architecture-diagram]
 ---
 
-# Claude Design for CLI/API Agents
+# Sketch Mode (Throwaway Mockup Variants)
+
+Use this mode when the user wants to **see a design direction before committing** — exploring a UI/UX idea as disposable HTML mockups. The point is 2-3 interactive variants to compare visual directions side-by-side before a real build. Load this when the user says "sketch this screen", "show me what X could look like", "compare layout A vs B", "let me see some variants", "mockup this before I build".
+
+**Do NOT use this mode for:** production components (use normal claude-design), diagrams (use excalidraw/architecture-diagram), or locked-in designs (just build it).
+
+## Sketch vs Full Design
+
+| Dimension | Sketch Mode | Full Design (above) |
+|-----------|-------------|---------------------|
+| Fate | Throwaway — promote to real code | Often shippable |
+| Effort | Fast, one round | Multi-round, considered |
+| Variants | 2-3 in one go | 1-3 with "one winner" |
+| Interaction | One meaningful state transition | Full interaction model |
+| Polish | "Good enough" visually | High visual bar |
+| Verification | browser_vision visual check | Full verification |
+
+## Core Method
+
+```text
+intake → variants → head-to-head → pick winner (or iterate)
+```
+
+### 1. Intake (skip if user already gave enough)
+
+Before generating, get three things one at a time via `clarify`:
+1. **Feel** — "Adjectives, emotions, a vibe" (e.g. "calm, editorial, like Linear")
+2. **References** — "What apps/sites capture the feel?"
+3. **Core action** — "What's the single most important thing a user does on this screen?"
+
+### 2. Variants (2-3, never 1, rarely 4+)
+
+Each variant takes a **different design stance**, not different pixel values. Good axes:
+
+- **Density:** compact / airy / ultra-dense
+- **Emphasis:** content-first / action-first / tool-first
+- **Aesthetic:** editorial / utilitarian / playful
+- **Layout:** single-column / sidebar / split-pane
+- **Grounding:** card-based / bare-content / document-style
+
+Variant naming: describe the stance (e.g. `001-calm-editorial/`, `002-utilitarian-dense/`).
+
+### 3. Build Real HTML
+
+Each variant is a single self-contained HTML file in `sketches/NNN-stance-name/index.html`:
+- Inline `<style>`, system fonts or one Google Font, Tailwind CDN fine
+- Real fake content (not Lorem ipsum)
+- **Interactive**: links clickable, hovers, at least one state transition
+- Default CSS reset:
+
+```html
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+           "Helvetica Neue", Arial, sans-serif;
+         -webkit-font-smoothing: antialiased; color: #1a1a1a;
+         background: #fafafa; line-height: 1.5; }
+</style>
+```
+
+**Verify visually** with browser tools:
+```
+browser_navigate(url="file:///abs/path/to/sketches/001-calm-editorial/index.html")
+browser_vision(question="Does this look clean? Any bugs?")
+```
+
+### 4. Each Variant README
+
+Each variant dir has a `README.md` with: design stance (1 sentence), key choices (layout, typography, color, interaction), trade-offs (strong/weak at), and best-for.
+
+### 5. Head-to-Head Comparison
+
+Present as a table, then **opiniate**:
+
+| Dimension | Calm editorial | Utilitarian dense |
+|-----------|----------------|-------------------|
+| Density | Low | High |
+| Feel | Calm, trusted | Sharp, tool-like |
+
+**My take:** The utilitarian dense for power users, calm editorial for content-forward.
+
+### Interactivity Bar
+
+A sketch is interactive enough when the user can: (1) click a primary action with visible response, (2) see one meaningful state transition, (3) hover recognizable affordances.
+
+### Theming (with tokens)
+
+If the project has existing design tokens, put shared values in `sketches/themes/tokens.css` and `@import` in each variant. Keep to 3 colors + 1 font minimum.
+
+---
+
+> You're not writing code. You're conducting light.
 
 Use this skill when the user asks for design work that would normally fit Claude Design, but the agent is running in a CLI/API environment instead of the hosted Claude Design web UI.
 

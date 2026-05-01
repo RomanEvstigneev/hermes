@@ -339,6 +339,62 @@ Long-lived. Use `remote-pdb` at a handler, or `debugpy` with `--wait-for-client`
   rg -n 'breakpoint\(\)|set_trace\(|debugpy\.listen' --type py
   ```
 
+## Debugging Hermes TUI Commands
+
+Hermes slash commands span three layers. The Python side (command registry + tui_gateway) is the most common debugging target. See also: `node-inspect-debugger` for the Ink/TypeScript frontend layer.
+
+### Architecture Quick Reference
+
+```
+Python backend (hermes_cli/commands.py)     <- canonical COMMAND_REGISTRY
+       │
+       ▼
+TUI gateway (tui_gateway/server.py)         <- slash.exec / command.dispatch
+       │
+       ▼
+TUI frontend (ui-tui/src/app/slash/)        <- local handlers (Node/Ink)
+```
+
+The Python `COMMAND_REGISTRY` is the source of truth for: CLI dispatch, gateway help, Telegram BotCommand menu, Slack subcommand map, and autocomplete data shipped to Ink.
+
+### Investigation Steps
+
+1. **Check Python registry:** `search_files --pattern "CommandDef" --file_glob "*.py" --path hermes_cli/`
+2. **Check gateway handler:** `search_files --pattern "slash.exec|command.dispatch" --path tui_gateway/`
+3. **Check TUI frontend (Node):** see `node-inspect-debugger` skill
+
+### Fix: Missing Command Autocomplete
+
+If a command exists in the TUI but doesn't show in autocomplete, it's missing from `COMMAND_REGISTRY` in `hermes_cli/commands.py`:
+
+```python
+CommandDef("commandname", "Description", "Session",
+           cli_only=True, aliases=("alias",),
+           args_hint="[arg1|arg2|arg3]",
+           subcommands=("arg1", "arg2", "arg3")),
+```
+
+- `cli_only=True` — only in interactive CLI/TUI
+- `gateway_only=True` — only in messaging platforms
+- neither — available everywhere
+
+### Common Issues
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| Shows in TUI but not autocomplete | Missing COMMAND_REGISTRY entry | Add CommandDef |
+| Shows in autocomplete but doesn't work | Missing handler or wrong dispatch path | Add handler in cli.py or gateway/run.py |
+| Differs between CLI and TUI | Different implementations | Check both cli.py::process_command and TUI local handler |
+| Persists config but UI doesn't update | Nanostore not patched | Also patch UI state immediately (patchUiState, etc.) |
+
+### Verification
+
+```bash
+cd /home/bb/hermes-agent && npm --prefix ui-tui run build
+hermes --tui
+# Type / and verify command appears in autocomplete
+```
+
 ## One-Shot Recipes
 
 **"Why is this dict missing a key?"**

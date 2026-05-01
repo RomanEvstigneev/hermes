@@ -1,0 +1,8 @@
+{
+  "last_report_path": "/opt/data/logs/curator/20260430-134608",
+  "last_run_at": "2026-04-30T13:46:08.292526+00:00",
+  "last_run_duration_seconds": 1156.681048,
+  "last_run_summary": "auto: no changes; llm: Consolidation complete. Here's the summary:\n\n---\n\n## Umbrella Consolidation Summary\n\n### Clusters Processed: 3\n\n**1. Baoyu Suite: `baoyu-comic` + `baoyu-infographic` → `baoyu` (new umbrella)**\n- Both from the same upstream project (JimLiu/b…",
+  "paused": false,
+  "run_count": 1
+}
