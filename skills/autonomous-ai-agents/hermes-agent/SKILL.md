@@ -184,6 +184,17 @@ hermes slack manifest --slashes-only > /tmp/slashes.json
 
 The cleaned-up manifest should be schema v2, have no `url` fields in slash commands, include the `app_home` block, and use only lowercase-letter command names.
 
+### Memory self-improvement vs curator
+
+Hermes has two different background learning paths that are easy to confuse:
+
+- `hermes curator` / `/curator` is a full maintenance system for agent-created skills: usage telemetry, active/stale/archived lifecycle, pin/unpin protection, per-run reports under `$HERMES_HOME/logs/curator/`, and an auxiliary-model review pass. It does not manage bundled or hub-installed skills.
+- Built-in memory files (`$HERMES_HOME/memories/MEMORY.md` and `USER.md`) are maintained by the lighter background self-improvement review in `AIAgent`: after enough turns (`memory.nudge_interval`, runtime default 10 when not configured) a quiet fork reviews the recent conversation with only memory+skills toolsets and may call the `memory` tool to add/replace/remove durable entries. This is opportunistic conversation review, not a `curator`-style daemon: no memory stale/archive lifecycle, no memory pin/unpin, and no per-run memory reports.
+
+When users ask whether Hermes has a curator-like mechanism for memory, answer precisely: yes, a background memory review/self-improvement loop exists, but there is no dedicated `hermes memory curator` equivalent for MEMORY.md/USER.md.
+
+For vector/semantic memory providers (Honcho, Supermemory, and similar plugins), the background review still uses the normal built-in `memory` tool first; `MemoryManager.on_memory_write(...)` then gives the active external provider a chance to mirror the write. This is provider-specific and usually additive rather than a full lifecycle sync: Honcho currently mirrors explicit `add` writes for `target=user` as conclusions, while Supermemory mirrors explicit `add` writes as explicit memories when writes are enabled. Regular conversation turns also flow through provider `sync_turn(...)` for capture/recall if the provider is active and configured. Do not imply that background review performs curator-grade housekeeping in vector stores: replace/remove may not be mirrored, there is no stale/archive/pin lifecycle, no vector-store curator report, and only one external memory provider is active at a time.
+
 ### Sessions
 
 ```
@@ -764,14 +775,24 @@ run_conversation():
 
 ### Testing
 
+For this codebase, prefer the repository wrapper because it matches CI environment assumptions:
+
 ```bash
-python -m pytest tests/ -o 'addopts=' -q   # Full suite
-python -m pytest tests/tools/ -q            # Specific area
+scripts/run_tests.sh                                  # Full suite, CI-parity
+scripts/run_tests.sh tests/gateway/test_foo.py -q     # Specific area/file
 ```
+
+If the wrapper cannot run because the local venv is missing packaging tools (observed: `venv/bin/python: No module named pip` while trying to install `pytest-split`), fall back only for a narrow verification run and say so explicitly:
+
+```bash
+./venv/bin/python -m pytest tests/gateway/test_foo.py -q -o 'addopts='
+```
+
+Do not present fallback pytest as full CI-equivalent verification. The wrapper is still the standard path before pushing.
 
 - Tests auto-redirect `HERMES_HOME` to temp dirs — never touch real `~/.hermes/`
 - Run full suite before pushing any change
-- Use `-o 'addopts='` to clear any baked-in pytest flags
+- Use `-o 'addopts='` only on fallback direct pytest runs to clear baked-in pytest flags
 
 ### Commit Conventions
 

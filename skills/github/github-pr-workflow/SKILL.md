@@ -29,8 +29,12 @@ else
   AUTH="git"
   # Ensure we have a token for API calls
   if [ -z "$GITHUB_TOKEN" ]; then
-    if [ -f ~/.hermes/.env ] && grep -q "^GITHUB_TOKEN=" ~/.hermes/.env; then
+    if [ -n "$GH_TOKEN" ]; then
+      GITHUB_TOKEN="$GH_TOKEN"
+    elif [ -f ~/.hermes/.env ] && grep -q "^GITHUB_TOKEN=" ~/.hermes/.env; then
       GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.hermes/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
+    elif [ -f ~/.hermes/.env ] && grep -q "^GH_TOKEN=" ~/.hermes/.env; then
+      GITHUB_TOKEN=$(grep "^GH_TOKEN=" ~/.hermes/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
       GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
     fi
@@ -38,6 +42,8 @@ else
 fi
 echo "Using: $AUTH"
 ```
+
+Private repositories often return HTTP 404, not 403, when the token is missing or lacks access. If a known private repo returns 404 from REST or `gh api`, check `gh auth status`, `GITHUB_TOKEN`, and `GH_TOKEN` before assuming the repo/branch path is wrong.
 
 ### Extracting Owner/Repo from the Git Remote
 

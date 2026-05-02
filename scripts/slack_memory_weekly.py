@@ -121,5 +121,31 @@ def main():
 
     output_memory_files()
 
+def write_run_log(week_label: str, captured_output: str) -> str:
+    """Save a detailed run log and return the path."""
+    import pathlib
+    log_dir = pathlib.Path("/opt/data/logs/cron_runs/memory-weekly-review")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"{datetime.now(tz=timezone.utc).strftime('%Y-%m-%d')}.log"
+    header = (
+        f"=== Weekly Memory Review Run Log ===\n"
+        f"Period: {week_label}\n"
+        f"Script ran at: {datetime.now(tz=timezone.utc).isoformat()}\n"
+        f"{'='*50}\n\n"
+    )
+    log_path.write_text(header + captured_output, encoding="utf-8")
+    print(f"\nLOG_PATH: {log_path}", flush=True)
+    return str(log_path)
+
+
 if __name__ == "__main__":
-    main()
+    import io, contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        main()
+    output = buf.getvalue()
+    sys.stdout.write(output)
+    sys.stdout.flush()
+    now_dt = datetime.now(tz=timezone.utc)
+    week_start_dt = now_dt - timedelta(days=7)
+    write_run_log(f"{week_start_dt.strftime('%Y-%m-%d')} to {now_dt.strftime('%Y-%m-%d')}", output)

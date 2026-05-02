@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "description": "Persistent state for the Daily Closed-Loop Operations Review cron job. Stores proposal/no-action history for deduplication and follow-up tracking.",
+  "status_values": [
+    "no_action",
+    "proposed",
+    "rejected",
+    "approved_for_plan",
+    "plan_approved",
+    "implementation_started",
+    "implemented",
+    "followed_up",
+    "stale"
+  ],
+  "proposals": [
+    {
+      "date": "2026-04-30",
+      "created_at": "2026-05-01T11:47:07.114816+00:00",
+      "status": "proposed",
+      "fingerprint": "cron-audit-jsonl-gap",
+      "title": "Fix cron audit trail visibility",
+      "existing_process_anchor": "Daily Cron Health Report and cron audit JSONL under /opt/data/logs/cron_runs",
+      "business_reason": "The operator-facing health report depends on reliable run evidence. If audit records are missing while jobs are running, Roman may get a falsely quiet or degraded view and lose confidence in whether scheduled operations actually executed.",
+      "evidence": [
+        "The review report shows audit_records_count: 0 for 2026-04-30 at /opt/data/logs/cron_runs/2026-04-30.jsonl.",
+        "The same evidence shows cron output files and a successful Daily Cron Health Report run on 2026-04-30, so scheduled activity existed but was not represented in the daily audit record count.",
+        "Daily Cron Health Report outputs on 2026-04-30 reported degraded status with 0 observed runs after the script path issue was fixed, indicating the health report may be relying on incomplete audit data."
+      ],
+      "requested_next_step": "Roman approval to write plan",
+      "follow_up": {
+        "open_items_reviewed": 0,
+        "implemented_items_reviewed": 0,
+        "notes": [
+          "No prior open proposals existed in the state file, so there was nothing to follow up before this recommendation."
+        ]
+      }
+    },
+    {
+      "date": "2026-05-01",
+      "created_at": "2026-05-02T04:00:36.563207+00:00",
+      "status": "no_action",
+      "fingerprint": "no-action-2026-05-01",
+      "title": "No action recommended today",
+      "existing_process_anchor": null,
+      "business_reason": "Yesterday's evidence shows operational noise and follow-up signals, but no clearly stronger, non-duplicative improvement than the existing open audit-trail proposal. Recommending another initiative now would risk distracting from the pending approval item.",
+      "evidence": [
+        "The prior cron audit visibility proposal remains open with status proposed and still needs Roman approval to write a plan.",
+        "For 2026-05-01, the cron audit file exists and contains 2 records, while scheduled cron outputs and health reporting continued without delivery errors, so the new signal is mixed rather than a separate strong fix candidate.",
+        "Gateway and usage-limit errors appeared in logs, but they are tied to the Hermes update and manual sessions rather than a clear recurring scheduled-process failure requiring a new closed-loop proposal today."
+      ],
+      "requested_next_step": "none",
+      "follow_up": {
+        "open_items_reviewed": 1,
+        "implemented_items_reviewed": 0,
+        "notes": [
+          "The open cron audit trail visibility proposal was reviewed. New evidence shows the 2026-05-01 audit file has 2 records, which is an encouraging signal, but the item is still pending Roman approval to write an implementation plan or close it after the scheduled follow-up check.",
+          "No implemented proposal records exist yet, so there was no implementation outcome to review."
+        ]
+      }
+    }
+  ]
+}

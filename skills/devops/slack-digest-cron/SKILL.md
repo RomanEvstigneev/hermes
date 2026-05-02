@@ -1,7 +1,7 @@
 ---
 name: slack-digest-cron
 description: "Create a scheduled Slack channel digest using cron + data-collection script. Reads channel history via Slack API and has Hermes summarize it. Includes a file-based persistent memory system for channels and people."
-version: 1.1.0
+version: 1.3.0
 tags: [slack, cron, digest, summary, notifications, memory]
 ---
 
@@ -192,6 +192,25 @@ Implementation pattern:
 - In the cron prompt, instruct the model to translate repository paths into practical impact and avoid raw file lists unless debugging.
 - Keep Slack output brief: files changed count, push success, then `Business summary:` bullets.
 
+### Daily Git Auto-Commit push protection failures
+
+If the daily backup creates a local commit but GitHub rejects the push because push protection detected a Slack token or other secret, do not retry the push. Investigate the local commit with masked output only, then rewrite the unpushed local commit before pushing.
+
+Roman wants cron output, runtime output, transcripts, logs, and accumulated operational history preserved in git where practical. Do **not** broadly exclude `cron/output/` from backups. Instead, sanitize secrets before commit and remove only the specific unsafe output file or line that captured credentials.
+
+Required prevention pattern for `/opt/data/scripts/daily_git_commit.py`:
+- Keep `cron/output/` eligible for backup.
+- Before staging/committing, scan candidate text files for known secret patterns such as Slack tokens (`xox...`, `xapp...`).
+- Replace any matched secret with `[REDACTED_SECRET]` in the file before commit.
+- Print a redaction summary without printing the secret value.
+- Keep GitHub push protection enabled as a final safety net.
+
+Cron prompts should also include a secret-handling rule: never include raw credentials, API keys, Slack token strings, authorization headers, or private key material in Slack messages or generated files; redact as `[REDACTED_SECRET]` if seen.
+
+Credential rotation is a risk-based decision when the blocked commit never reached GitHub: recommend rotation for production/high-scope tokens or if the token may have passed through Slack/LLM/session logs, but do not present it as mandatory emergency action solely because an unpushed local commit was blocked.
+
+See `references/git-backup-push-protection.md` for the safe investigation workflow, local history rewrite steps, rotation checklist, and prevention checklist.
+
 ### Test-running a cron job after a delivery fix
 
 Use `cronjob(action='run', job_id='<job_id>')` to trigger a test run. Important behavior: this does not execute synchronously; it sets `next_run_at` to now and the gateway's cron ticker picks it up on its next interval, usually within 60 seconds.
@@ -206,6 +225,14 @@ Verification workflow:
    - `deliver` is the intended Slack target, not `local`.
 4. Check `/opt/data/cron/output/<job_id>/` for the new output markdown file and read it to confirm the generated Slack message body.
 5. If Slack still did not receive it, search logs for `Send error`, `channel_not_found`, and `Fallback send`.
+
+## Templates (load with skill_view file_path=)
+
+- `templates/cron-prompt-daily-digest.md` — proven prompt for Slack Daily Digest job
+- `templates/cron-prompt-memory-enrichment.md` — proven prompt for Daily Memory Enrichment job
+- `templates/cron-prompt-memory-weekly.md` — proven prompt for Weekly Memory Review job
+- `templates/cron-prompt-memory-monthly.md` — proven prompt for Monthly Memory Deep Clean job
+- `templates/cron-script-logging-boilerplate.py` — reusable write_run_log() + redirect-stdout boilerplate for any cron script
 
 ## Architecture: script= parameter injects data into cron prompt
 
@@ -285,6 +312,28 @@ import re
 text = re.sub(r"<@([A-Z0-9]+)>", lambda m: f"@{get_display_name(m.group(1))}", text)
 ```
 
+## Default rules for every cron job (apply at creation, not just digest)
+
+1. deliver: always set to a real Slack target (e.g. slack:C0B18TP48JD). NEVER leave as "local".
+2. Log file: every script must write a detailed run log to /opt/data/logs/cron_runs/<job-slug>/YYYY-MM-DD.log.
+   Use the redirect-stdout pattern to capture all output:
+   ```python
+   if __name__ == "__main__":
+       import io, contextlib
+       buf = io.StringIO()
+       with contextlib.redirect_stdout(buf):
+           main()
+       output = buf.getvalue()
+       sys.stdout.write(output)
+       sys.stdout.flush()
+       write_run_log(label, output)
+   ```
+   Print LOG_PATH to stdout so the LLM can include it in the Slack message.
+3. Prompt must say: "Do NOT call send_message. Return a Slack-ready executive summary as your final
+   response — the cron delivery system posts it automatically." Include LOG_PATH reference.
+4. Slack message style: executive summary — concise, actionable, founder-readable in 30 seconds.
+   Bullet lists. No markdown tables. Include log path at the bottom.
+
 ## Cron Slack delivery target
 
 Roman prefers clean cron Slack reports without wrapper/footer text. Keep `/opt/data/config.yaml` set to:
@@ -305,6 +354,36 @@ deliver='slack:C0B18TP48JD'
 ```
 
 Then make the prompt return only the Slack-ready message body. Do not tell it to call `send_message`.
+
+## Closed-loop operations review cron pattern
+
+Use this pattern when Roman asks for a recurring operational review that proposes improvements but must not implement them without human approval.
+
+Known live instance in Roman's setup:
+```text
+Name: Daily Closed-Loop Operations Review
+Job ID: 3831a0ec0b1c
+Schedule: 0 4 * * *                 # fixed 04:00 UTC daily, intended as 05:00 CET
+Script: closed_loop_ops_review.py
+Deliver: slack:C0B18TP48JD
+State: /opt/data/state/closed_loop_ops_review.json
+Reports: /opt/data/logs/closed_loop_ops_review/YYYY-MM-DD.json
+Run logs: /opt/data/logs/cron_runs/closed-loop-ops-review/YYYY-MM-DD.log
+```
+
+Design rules:
+1. Analyze the previous UTC calendar day only.
+2. Include Hermes sessions, Hermes logs, cron job definitions/status/results, cron output/audit files, and persistent proposal state.
+3. Exclude Slack workspace channel/message content unless Roman explicitly asks otherwise.
+4. Recommend at most one initiative. If no high-signal improvement exists, say `No action recommended today` and explain why briefly.
+5. Forbid net-new workflows. Every recommendation must anchor to an existing process, job, script, log, session pattern, or workflow.
+6. Deduplicate against recent proposals in `/opt/data/state/closed_loop_ops_review.json`; do not repeat an idea without a materially new signal.
+7. The cron job may update only its state file. It must not edit operational code/config, run shell commands, or implement fixes.
+8. Use business language first, then technical evidence. Ask Roman to approve writing an implementation plan; implementation starts only after he approves that plan.
+9. Support both follow-up types: immediate post-implementation summary from the implementing Hermes session, and next-day cron follow-up based on evidence/state.
+10. Excluding Slack workspace content requires more than not calling the Slack API: suppress previews from Slack-derived cron jobs (`slack_daily_digest.py`, `slack_memory_update.py`, `slack_memory_weekly.py`, `slack_memory_monthly.py`) and suppress text samples from Slack-platform or Slack-derived cron sessions. Keep metadata/labels only.
+
+See `references/closed-loop-ops-review.md` for the implementation details, prompt/state schema, manual Slack delivery test workflow, output/state/log verification checklist, and observed follow-up one-shot behavior.
 
 ## Rate limiting
 
@@ -489,6 +568,98 @@ user OAuth tokens, not bot tokens. The manual filter approach above is the
 correct pattern for bot tokens.
 
 ---
+
+## Auditing existing cron jobs for silent delivery failures
+
+When asked to review or fix existing cron jobs, always do this audit first:
+
+1. Read `/opt/data/cron/jobs.json` (or `cronjob(action='list')`) and check EVERY job's `deliver` field.
+2. Any job with `deliver: local` will NEVER post to Slack even if its prompt says to — this is a silent failure mode.
+3. Fix by updating the job: `cronjob(action='update', job_id='...', deliver='slack:C0B18TP48JD', prompt='...')`.
+4. Also audit the prompt itself: remove any `send_message` call instructions and replace with "return Slack-ready summary as final response — cron delivery system posts it automatically."
+5. After fixing, run `cronjob(action='run', job_id='...')`, wait 75 seconds, then verify:
+   - `last_run_at` updated, `last_status: ok`, `last_delivery_error: null`
+   - Read `/opt/data/cron/output/<job_id>/<latest_timestamp>.md` to see the exact message that was delivered
+
+## Excluding specific channels from the digest
+
+Use a hardcoded set of channel IDs at the top of the data-collection script.
+Filter by ID (not name) so renames don't break the exclusion.
+
+```python
+# Channels permanently excluded from the daily digest
+EXCLUDED_CHANNEL_IDS = {
+    "C0B18TP48JD",  # #hermes-home — bot's own operational channel
+}
+
+# In get_bot_channels(), filter on membership AND exclusion:
+if ch.get("is_member") and ch["id"] not in EXCLUDED_CHANNEL_IDS:
+    channels.append(...)
+```
+
+Rationale: #hermes-home is where the digest is delivered — including it in the
+analysis would produce circular self-referential noise. Always exclude it by default.
+
+## Reading full Slack history (all-time, not just yesterday)
+
+Use case: onboarding, bootstrapping memory, or a one-off audit.
+
+```python
+# No oldest/latest — fetches from the beginning of the channel
+msgs = []
+cursor = None
+while True:
+    kwargs = {'channel': ch_id, 'limit': 200}
+    if cursor:
+        kwargs['cursor'] = cursor
+    r = client.conversations_history(**kwargs)
+    for m in r.get('messages', []):
+        if m.get('subtype') in SKIP or m.get('bot_id'):
+            continue
+        msgs.append(m)
+    cursor = r.get('response_metadata', {}).get('next_cursor')
+    if not cursor or not r.get('has_more'):
+        break
+    time.sleep(0.3)
+# Messages come newest-first; reverse for chronological order
+msgs = list(reversed(msgs))
+```
+
+For link/mention cleanup before passing to LLM:
+```python
+import re
+text = re.sub(r'<@([A-Z0-9]+)>', lambda x: '@' + get_name(x.group(1)), text)
+text = re.sub(r'<https?://[^|>]+\|([^>]+)>', r'\1', text)  # titled links → title
+text = re.sub(r'<https?://[^>]+>', '[link]', text)           # bare links → [link]
+```
+
+## Bot channel membership and the channels:join scope gap
+
+The Hermes Slack bot token at Roman's setup includes `channels:history` and `channels:read`
+but NOT `channels:join`. This means:
+
+- `conversations.list` will return ALL public channels (member and non-member)
+- Trying to read history of a non-member channel → `not_in_channel` error
+- Trying to call `conversations_join()` → `missing_scope` error
+
+**The bot cannot self-join channels.** To add the bot to more channels:
+- A human must run `/invite @hermes` in the target channel from the Slack UI
+- OR a Slack admin can add the bot via the channel settings
+
+Once invited, the bot is automatically picked up by `get_bot_channels()` on the next digest run — no script changes needed.
+
+Current bot membership as of 2026-05-01 (9 channels):
+  #general, #website, #bizdev, #proj-pitchdeck, #industry-knowledge,
+  #design, #nexus-conf, #founders [private], #hermes-home [private]
+
+Non-member channels worth inviting the bot to (use `/invite @hermes` in each):
+  High value: #random, #daily, #ai-hype-cycle, #pricing, #fin-model,
+              #linkedin-posts, #awareness, #deploys-prod, #deploys-dev, #alerts-infra
+  Project channels: #proj-ardian-general, #proj-ardian-ghg-analysis, #proj-ardian-helix,
+                    #proj-indefi-ai-dd, #proj-indefi-sscp, #proj-mazars-valuation,
+                    #proj-altor-susty-value-creation, #proj-arendt-esg,
+                    #proj-esg-dd-tool, #proj-docs-generation, #proj-custom-plugins
+  Skip: #welcome, #slackbot-backlog
 
 ## Pitfalls
 

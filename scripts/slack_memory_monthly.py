@@ -136,5 +136,30 @@ def main():
 
     output_all_memory_files()
 
+def write_run_log(month_label: str, captured_output: str) -> str:
+    """Save a detailed run log and return the path."""
+    import pathlib
+    log_dir = pathlib.Path("/opt/data/logs/cron_runs/memory-monthly-clean")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"{datetime.now(tz=timezone.utc).strftime('%Y-%m-%d')}.log"
+    header = (
+        f"=== Monthly Memory Deep Clean Run Log ===\n"
+        f"Month: {month_label}\n"
+        f"Script ran at: {datetime.now(tz=timezone.utc).isoformat()}\n"
+        f"{'='*50}\n\n"
+    )
+    log_path.write_text(header + captured_output, encoding="utf-8")
+    print(f"\nLOG_PATH: {log_path}", flush=True)
+    return str(log_path)
+
+
 if __name__ == "__main__":
-    main()
+    import io, contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        main()
+    output = buf.getvalue()
+    sys.stdout.write(output)
+    sys.stdout.flush()
+    now_dt = datetime.now(tz=timezone.utc)
+    write_run_log(now_dt.strftime("%B %Y"), output)

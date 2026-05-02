@@ -55,6 +55,11 @@ def get_user_display_name(user_id: str, user_cache: dict) -> str:
         user_cache[user_id] = user_id
         return user_id
 
+# Channels permanently excluded from the daily digest
+EXCLUDED_CHANNEL_IDS = {
+    "C0B18TP48JD",  # #hermes-home — bot's own operational channel, not business content
+}
+
 def get_bot_channels():
     """Get all channels the bot is a member of."""
     channels = []
@@ -74,7 +79,7 @@ def get_bot_channels():
             break
 
         for ch in resp.get("channels", []):
-            if ch.get("is_member"):
+            if ch.get("is_member") and ch["id"] not in EXCLUDED_CHANNEL_IDS:
                 channels.append({
                     "id": ch["id"],
                     "name": ch.get("name", ch["id"]),
@@ -232,6 +237,32 @@ def output_memory_context():
                 print(f.read())
 
 
+def write_run_log(date_label: str, captured_output: str) -> str:
+    """Save a detailed run log and return the path."""
+    import pathlib
+    log_dir = pathlib.Path("/opt/data/logs/cron_runs/slack-daily-digest")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"{datetime.now(tz=timezone.utc).strftime('%Y-%m-%d')}.log"
+    header = (
+        f"=== Slack Daily Digest Run Log ===\n"
+        f"Date range: {date_label}\n"
+        f"Script ran at: {datetime.now(tz=timezone.utc).isoformat()}\n"
+        f"{'='*50}\n\n"
+    )
+    log_path.write_text(header + captured_output, encoding="utf-8")
+    print(f"\nLOG_PATH: {log_path}", flush=True)
+    return str(log_path)
+
+
 if __name__ == "__main__":
-    main()
-    output_memory_context()
+    import io, contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        main()
+        output_memory_context()
+    output = buf.getvalue()
+    sys.stdout.write(output)
+    sys.stdout.flush()
+    now = datetime.now(tz=timezone.utc)
+    yesterday = now - timedelta(days=1)
+    write_run_log(yesterday.strftime("%Y-%m-%d (%A)"), output)

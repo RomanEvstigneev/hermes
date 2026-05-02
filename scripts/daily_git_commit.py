@@ -6,11 +6,18 @@ Outputs a summary for Hermes to relay to Slack.
 """
 
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
 
 REPO_DIR = "/opt/data"
+
+SECRET_PATTERNS = [
+    ("Slack bot token", re.compile(r"xox[baprs]-[A-Za-z0-9-]{20,}")),
+    ("Slack app token", re.compile(r"xapp-[A-Za-z0-9-]{20,}")),
+]
+SECRET_REPLACEMENT = "[REDACTED_SECRET]"
 
 def run(cmd, check=True):
     result = subprocess.run(
@@ -63,6 +70,40 @@ def build_business_summary(paths):
     return hints
 
 
+def redact_secrets_in_file(path):
+    """Redact known secret patterns in a text file before it is committed."""
+    full_path = os.path.join(REPO_DIR, path)
+    if not os.path.isfile(full_path):
+        return []
+    try:
+        with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
+            original = f.read()
+    except OSError:
+        return []
+
+    redacted = original
+    findings = []
+    for label, pattern in SECRET_PATTERNS:
+        redacted, count = pattern.subn(SECRET_REPLACEMENT, redacted)
+        if count:
+            findings.append((label, count))
+
+    if findings and redacted != original:
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.write(redacted)
+    return findings
+
+
+def redact_candidate_files(entries):
+    """Sanitize commit candidates while preserving audit/history files in git."""
+    redacted = []
+    for _, path in entries:
+        findings = redact_secrets_in_file(path)
+        if findings:
+            redacted.append((path, findings))
+    return redacted
+
+
 def main():
     now = datetime.now(tz=timezone.utc)
     date_label = now.strftime("%Y-%m-%d")
@@ -83,6 +124,12 @@ def main():
                 return True
         return False
 
+    entries = [(status_code, path) for status_code, path in entries if not should_ignore(path)]
+    redacted_files = redact_candidate_files(entries)
+
+    # Re-read status after redaction because sanitizing files may change tracked files.
+    status = run("git status --porcelain")
+    entries = [parse_porcelain_line(l) for l in status.stdout.strip().splitlines() if l.strip()]
     entries = [(status_code, path) for status_code, path in entries if not should_ignore(path)]
 
     if not entries:
@@ -129,6 +176,11 @@ def main():
     print(f"=== DAILY GIT COMMIT: {date_label} ===")
     print(f"STATUS: {'pushed' if push_ok else 'push_failed'}")
     print(f"Files changed: {len(entries)}")
+    if redacted_files:
+        print("Secret redaction: applied before commit")
+        for path, findings in redacted_files:
+            labels = ", ".join(f"{label} ({count})" for label, count in findings)
+            print(f"- {path}: {labels}")
     if modified: print(f"Modified ({len(modified)}): {', '.join(modified)}")
     if added:    print(f"Added ({len(added)}): {', '.join(added)}")
     if deleted:  print(f"Deleted ({len(deleted)}): {', '.join(deleted)}")
@@ -140,5 +192,30 @@ def main():
     if not push_ok:
         print(f"Push error: {push_result.stderr.strip()}")
 
+def write_run_log(date_label: str, captured_output: str) -> str:
+    """Save a detailed run log and return the path."""
+    import pathlib
+    log_dir = pathlib.Path("/opt/data/logs/cron_runs/daily-git-commit")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"{datetime.now(tz=timezone.utc).strftime('%Y-%m-%d')}.log"
+    header = (
+        f"=== Daily Git Auto-Commit Run Log ===\n"
+        f"Date: {date_label}\n"
+        f"Script ran at: {datetime.now(tz=timezone.utc).isoformat()}\n"
+        f"{'='*50}\n\n"
+    )
+    log_path.write_text(header + captured_output, encoding="utf-8")
+    print(f"\nLOG_PATH: {log_path}", flush=True)
+    return str(log_path)
+
+
 if __name__ == "__main__":
-    main()
+    import io, contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        main()
+    output = buf.getvalue()
+    sys.stdout.write(output)
+    sys.stdout.flush()
+    now_dt = datetime.now(tz=timezone.utc)
+    write_run_log(now_dt.strftime("%Y-%m-%d"), output)

@@ -105,6 +105,19 @@ If no prompt is specified, the full JSON payload is dumped into the agent prompt
 
 ## Common Patterns
 
+### Slack channel message trigger with rate limiting
+
+When the trigger source is an incoming Slack message already handled by the Hermes Slack gateway, do not force the workflow through an external HTTP webhook. A built-in gateway hook can be the cleaner event source:
+
+1. Add a narrow hook module under `gateway/builtin_hooks/` for the specific automation class.
+2. Call it from `gateway/platforms/slack.py` early in `_handle_slack_message`, before normal mention/bot filtering if the automation must react to bot messages too.
+3. Apply channel filtering and rate limiting before any expensive GitHub/API/LLM work.
+4. Store durable state under `get_hermes_home() / "state" / ...`, not hardcoded `~/.hermes` or `/opt/data`, so profiles and Docker deployments work.
+5. Use a lock file to avoid concurrent runs when Slack delivers multiple messages at once.
+6. If the hook posts back into the same channel and bot messages are valid triggers, the first operation after channel filtering must be the rate-limit check to prevent feedback loops.
+
+See `references/slack-message-triggered-changelog.md` for a concrete production-changelog pattern using Slack message events plus GitHub `main` commit collection.
+
 ### GitHub: new issues
 ```bash
 hermes webhook subscribe github-issues \
