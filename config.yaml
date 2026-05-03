@@ -370,3 +370,14 @@ session_reset:
   at_hour: 4
 plugins:
   enabled: []
+post_session_audit:
+  enabled: true
+  notify_chat_id: D0B0P5BAQSF
+  skip_user_ids:
+  - U09NJ1H6V6K
+  watched_paths:
+  - memories
+  - memory
+  - skills
+  - cron/jobs.json
+  - scripts

@@ -226,8 +226,19 @@ Verification workflow:
 4. Check `/opt/data/cron/output/<job_id>/` for the new output markdown file and read it to confirm the generated Slack message body.
 5. If Slack still did not receive it, search logs for `Send error`, `channel_not_found`, and `Fallback send`.
 
-## Templates (load with skill_view file_path=)
+### Post-session knowledge update reports
 
+When Roman asks whether Hermes can notify him after conversations with other Slack users about memories or knowledge files that changed, answer yes but treat it as a separate automation rather than built-in default behavior.
+
+Preferred MVP: a cron watcher every 5 minutes that detects Slack-origin sessions with non-Roman users, waits 5-10 minutes of inactivity, diffs knowledge paths, and sends Roman an executive Slack summary only if meaningful changes occurred. Avoid gateway hooks for the first version unless Roman explicitly wants exact timer behavior.
+
+Track knowledge paths such as `/opt/data/memories/`, `/opt/data/memory/`, `/opt/data/skills/`, and `/opt/data/cron/jobs.json`. Do not send raw transcripts or private message excerpts; summarize what changed, list changed files, and redact secrets.
+
+See `references/post-session-knowledge-update-reports.md` for the implementation shape, safety rules, and summary template.
+
+## References and templates (load with skill_view file_path=)
+
+- `references/post-session-knowledge-update-reports.md` — design notes for a cron-based watcher that notifies Roman after non-Roman Slack sessions when memories, skills, or knowledge files changed.
 - `templates/cron-prompt-daily-digest.md` — proven prompt for Slack Daily Digest job
 - `templates/cron-prompt-memory-enrichment.md` — proven prompt for Daily Memory Enrichment job
 - `templates/cron-prompt-memory-weekly.md` — proven prompt for Weekly Memory Review job

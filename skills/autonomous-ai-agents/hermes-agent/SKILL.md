@@ -139,6 +139,8 @@ hermes mcp configure NAME   Toggle tool selection
 
 ### Gateway (Messaging Platforms)
 
+Related reference: `references/post-session-knowledge-audit.md` documents the built-in Slack post-session audit pattern, Roman's current deployment config, verification commands, and backup/push-protection caveats.
+
 ```
 hermes gateway run          Start gateway foreground
 hermes gateway install      Install as background service
@@ -218,6 +220,11 @@ hermes cron run ID          Trigger on next tick
 hermes cron remove ID       Delete a job
 hermes cron status          Scheduler status
 ```
+
+When checking whether a scheduled summary/audit exists, do not rely only on job names. Inspect `hermes cron list`/`cronjob(action='list')`, then verify `/opt/data/cron/jobs.json` plus the referenced script/config when relevant. For Roman's deployment, distinguish:
+- Daily Slack digest jobs that summarize channel discussions from channels where the bot is a member.
+- Memory enrichment/review jobs that update `/opt/data/memory/` from Slack activity.
+- Gateway lifecycle hooks such as `post_session_audit` in `/opt/data/config.yaml`, which are not cron jobs and may only report durable knowledge/config changes rather than full conversations.
 
 ### Webhooks
 
