@@ -51,6 +51,17 @@ Write code before the test? Delete it. Start over.
 
 Implement fresh from tests. Period.
 
+## Designing the Next Test
+
+Do not write tests in bulk for imagined behavior. Work one vertical slice at a time:
+- Pick one externally observable behavior.
+- Exercise the public interface that should own that behavior.
+- Prefer integration-style tests through real interfaces over tests that mock internal collaborators.
+- Name the test after what the caller/user observes, not the implementation path.
+- If the test is painful to write, treat that as design feedback: the interface may be too shallow, coupled, or implementation-shaped.
+
+A good test survives internal refactors. A bad test passes while user-visible behavior is broken, or fails when private structure changes but behavior does not.
+
 ## Red-Green-Refactor Cycle
 
 ### RED — Write Failing Test
@@ -270,6 +281,21 @@ Before marking work complete:
 
 Can't check all boxes? You skipped TDD. Start over.
 
+## Interface Design and Deep Modules
+
+Use tests as pressure on interface design. If a behavior requires excessive setup, private-method access, or mocks of internal collaborators, consider whether the module is too shallow.
+
+A **deep module** has a small interface with substantial implementation hidden behind it. A **shallow module** has an interface nearly as complex as its implementation.
+
+During REFACTOR, ask:
+- Can the public interface have fewer methods or simpler parameters?
+- Can invariants move behind the interface instead of being repeated by callers?
+- Can I test at the interface that owns the behavior instead of reaching through layers?
+- Is this seam real? One adapter is often hypothetical; two adapters usually prove a real seam.
+- Am I extracting pure functions for test convenience while the real bugs live in orchestration?
+
+Prefer dependency injection at real I/O seams. Avoid abstractions whose only purpose is to make mocks easier.
+
 ## When Stuck
 
 | Problem | Solution |
@@ -327,10 +353,12 @@ Never fix bugs without a test.
 
 ## Testing Anti-Patterns
 
-- **Testing mock behavior instead of real behavior** — mocks should verify interactions, not replace the system under test
-- **Testing implementation details** — test behavior/results, not internal method calls
-- **Happy path only** — always test edge cases, errors, and boundaries
-- **Brittle tests** — tests should verify behavior, not structure; refactoring shouldn't break them
+- **Testing mock behavior instead of real behavior** — mocks should verify interactions at true external seams, not replace internals just to assert calls.
+- **Testing implementation details** — test behavior/results, not private methods, internal call counts, or internal ordering.
+- **Bypassing the public interface to verify state** — prefer verifying through another public operation a user/caller would actually use.
+- **Happy path only** — always test edge cases, errors, and boundaries.
+- **Brittle tests** — tests should verify behavior, not structure; refactoring shouldn't break them.
+- **Horizontal test batches** — writing all model tests, then all API tests, then all UI tests encourages imagined behavior. Prefer one vertical behavior slice at a time.
 
 ## Final Rule
 

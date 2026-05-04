@@ -780,6 +780,35 @@ run_conversation():
   3. Context compression triggers automatically near token limit
 ```
 
+### Bundled Skill Integration Verification
+
+When adding or modifying bundled skills under the repo's `skills/` tree, verify the live Hermes runtime will actually see them. Bundled source files alone are not enough: Hermes syncs bundled skills into `$HERMES_HOME/skills/` and the system prompt is built from the installed skill index.
+
+1. Add or patch the bundled skill under `skills/<category>/<skill-name>/SKILL.md`.
+2. Run the bundled sync in the active environment:
+   ```bash
+   ./venv/bin/python - <<'PY'
+   from tools.skills_sync import sync_skills
+   print(sync_skills(quiet=True))
+   PY
+   ```
+3. Verify the skill names appear in the generated skills system prompt:
+   ```bash
+   ./venv/bin/python - <<'PY'
+   from agent.prompt_builder import build_skills_system_prompt
+   prompt = build_skills_system_prompt()
+   for name in ["your-skill-name"]:
+       print(name, name in prompt)
+   PY
+   ```
+4. If checking a long-running CLI/gateway process, reload or restart as appropriate. `/reload-skills` refreshes the slash-command map, while a fresh session/restart ensures the prompt index and cached context include the new descriptions.
+5. Use trigger-oriented frontmatter descriptions. The description is what the model sees in `<available_skills>`, so include likely user phrases and task classes rather than only a terse title.
+
+Pitfalls:
+- Do not import `build_skills_prompt`; the actual function is `agent.prompt_builder.build_skills_system_prompt`.
+- Do not claim a new bundled skill is usable just because it exists in the repo. Confirm both sync output and prompt visibility.
+- If a user already has a local skill with the same name, `sync_skills` may skip overwriting it. Inspect the sync result for `skipped` or `user_modified` before concluding the bundled version won.
+
 ### Testing
 
 For this codebase, prefer the repository wrapper because it matches CI environment assumptions:

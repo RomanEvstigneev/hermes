@@ -522,9 +522,12 @@ Key instructions to include in daily enrichment prompt:
 - Fact goes to Pending first — only moves to Confirmed if seen 2+ times
 - Never delete from Confirmed or Pending — only weekly review does that
 - Never touch Manual overrides section
-- Create new person file on first encounter (use Slack ID from "USERS SEEN TODAY" section)
-- Update "Last seen" dates on every run
+- Create new person file on first encounter (use Slack ID from "USERS SEEN TODAY" section), but do not create/update a people profile for the Hermes bot itself unless a human explicitly asks for a bot profile
+- Update "Last seen" dates on every run for human users who authored or were directly involved in the messages
+- Use the date from the script header (the Slack collection day), not the cron execution date or log filename date, for `Last updated`, `Last seen`, pending facts, channel topic dates, and the final `Memory Enrichment — [date]` header
 - Promote Pending → Confirmed if fact already exists in Pending from a previous day
+- Preserve any monthly-clean comments and all Manual overrides exactly unless the prompt explicitly instructs otherwise
+- Redact secrets (`xox...`, `xapp...`, API keys, Authorization headers, private keys) as `[REDACTED_SECRET]` before writing files or final Slack output
 
 ### Manual override commands (Phase 5 / live override)
 

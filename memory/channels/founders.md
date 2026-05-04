@@ -1,7 +1,7 @@
 # #founders
 Channel ID: C0B01JFKWUV
 Type: private
-Last updated: 2026-04-30
+Last updated: 2026-05-03
 
 ## Purpose / context
 Private founders channel. Strategic decisions, co-founder alignment,

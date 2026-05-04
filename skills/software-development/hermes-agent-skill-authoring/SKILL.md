@@ -128,6 +128,12 @@ Pick the closest existing category. Don't invent new top-level categories casual
 
 `metadata.hermes.related_skills` unions both trees (`skills/` in-repo and `~/.hermes/skills/`) at load time. You CAN reference a user-local skill from an in-repo skill, but it won't resolve for other users who clone the repo fresh. Prefer referencing only in-repo skills from in-repo skills. If a frequently-referenced skill lives only in `~/.hermes/skills/`, consider promoting it to the repo.
 
+## Evaluating and Porting Third-Party Skill Libraries
+
+When reviewing an external skill repository for Hermes integration, use `references/external-skill-library-evaluation.md`. Prefer selective porting and merging into existing class-level Hermes umbrellas over wholesale imports or duplicate narrow skills. Check for runtime-specific assumptions such as Claude Code hooks, unsupported frontmatter flags, hardcoded paths, and interactive-only workflows before recommending bundled integration.
+
+When the user asks to actually integrate external skills into bundled Hermes, use `references/external-skill-porting.md`. It covers the in-repo write path, attribution, Hermes normalization, duplicate-trigger handling, validation, and fallback test wording.
+
 ## Editing Existing In-Repo Skills
 
 - **Small fix (typo, added pitfall, tightened trigger):** `skill_manage(action='patch', name=..., old_string=..., new_string=...)` works fine on in-repo skills.

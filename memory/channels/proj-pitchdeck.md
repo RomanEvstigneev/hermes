@@ -1,7 +1,7 @@
 # #proj-pitchdeck
 Channel ID: C0ADMS5LWTU
 Type: public
-Last updated: 2026-04-30
+Last updated: 2026-05-03
 
 ## Purpose / context
 Project channel for pitch deck preparation — investor presentations,

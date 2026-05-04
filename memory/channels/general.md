@@ -1,7 +1,7 @@
 # #general
 Channel ID: C0AC7NP2NJF
 Type: public
-Last updated: 2026-05-01
+Last updated: 2026-05-03
 
 ## Purpose / context
 General company channel. Company-wide announcements, cross-team discussions,

@@ -69,12 +69,25 @@ You MUST complete each phase before proceeding to the next.
 
 **Action:** Use `read_file` on the relevant source files. Use `search_files` to find the error string in the codebase.
 
-### 2. Reproduce Consistently
+### 2. Build a Tight Feedback Loop and Reproduce Consistently
 
+Before fixing, create the fastest reliable loop that demonstrates the user's actual symptom. Try these loops roughly in order:
+
+1. **Failing test** at the smallest seam that reaches the bug: unit, integration, or end-to-end.
+2. **CLI/HTTP script** that exercises the behavior with fixture input and checks output.
+3. **Headless browser script** for UI bugs, asserting DOM state plus console/network failures.
+4. **Replay harness** from a captured payload, trace, event log, or request.
+5. **Throwaway harness** that boots the minimum subsystem needed to call the broken path.
+6. **Property/fuzz loop** for intermittent wrong-output bugs.
+7. **Bisection harness** suitable for `git bisect run` when the bug appeared between known states.
+8. **Human-in-the-loop script** only as a last resort, with explicit prompts and captured output.
+
+Then verify:
 - Can you trigger it reliably?
 - What are the exact steps?
-- Does it happen every time?
-- If not reproducible → gather more data, don't guess
+- Does it fail for the same reason each time?
+- Is the loop testing the user's symptom, not a nearby accidental failure?
+- Can it be faster, sharper, or more deterministic by pinning time, seeding randomness, isolating files, or freezing network calls?
 
 **Action:** Use the `terminal` tool to run the failing test or trigger the bug:
 
@@ -140,10 +153,19 @@ search_files("function_name(", path="src/", file_glob="*.py")
 search_files("variable_name\\s*=", path="src/", file_glob="*.py")
 ```
 
+### Non-Deterministic Bugs
+
+If the bug is flaky, do not give up on the loop. Make the loop statistical:
+- Run it many times and report the observed failure rate.
+- Pin time, seeds, worker counts, locale, network, and filesystem state where possible.
+- Capture enough state on each failure to compare successful and failing runs.
+- Treat "failure rate dropped" as evidence, not proof; keep a regression loop that would have failed before.
+
 ### Phase 1 Completion Checklist
 
 - [ ] Error messages fully read and understood
-- [ ] Issue reproduced consistently
+- [ ] A feedback loop exists and demonstrates the user's actual symptom.
+- [ ] Issue reproduced consistently, or a quantified flaky reproduction loop exists.
 - [ ] Recent changes identified and reviewed
 - [ ] Evidence gathered (logs, state, data flow)
 - [ ] Problem isolated to specific component/code
@@ -354,6 +376,16 @@ When fixing bugs:
 2. Debug systematically to find root cause
 3. Fix the root cause (GREEN)
 4. The test proves the fix and prevents regression
+
+## Verification Checklist
+
+Before marking debugging complete:
+
+- [ ] Original repro no longer reproduces.
+- [ ] Regression test or equivalent automated loop fails before the fix and passes after it.
+- [ ] The broader relevant suite passes.
+- [ ] Temporary instrumentation, debug logs, and throwaway harnesses are removed or clearly quarantined.
+- [ ] The final explanation states the root cause, the evidence that proved it, and why the fix addresses the source rather than the symptom.
 
 ## Real-World Impact
 
