@@ -3,7 +3,7 @@ Slack ID: U0ABC4S3HC5
 Role: Co-founder — business & sales
 Company: Axion Lab
 Last updated: 2026-05-03
-Last seen: 2026-05-02
+Last seen: 2026-05-03
 
 ## Confirmed facts
 <!-- Facts require current supporting evidence from Slack messages. No non-manual confirmed facts were supported by the 30-day evidence available in the monthly deep clean. -->
@@ -16,6 +16,7 @@ Last seen: 2026-05-02
 - 2026-05-02 (1x seen): Expected pitch deck feedback over the coming days and weeks and possible deck tweaks based on that feedback.
 - 2026-05-02 (1x seen): Reported that Axion Lab SARL incorporation in Luxembourg is being finalized.
 - 2026-05-02 (1x seen): Asked Hermes what it knows about him, indicating interest in the bot's stored memory/profile context.
+- 2026-05-03 (1x seen): Left Figma ideas for the website home page and asked Roman Evstigneev for a high-level review of missing items and ordering, while limiting review scope to the home page for now.
 
 ## Stale (not seen 30+ days)
 - Demoted 2026-05-01: Co-founder of Axion Lab — no supporting evidence in the available 30-day message summary.

@@ -6,4 +6,4 @@ Roman wants incidents logged in `/opt/data/logs/incident_log.md`. Git backups sh
 §
 Roman requires Hermes-owned persistent content to be English-only. He expects post-conversation self-improvement to proactively update durable memory and class-level skills/references when useful.
 §
-Roman expects every system Hermes builds to include detailed operational logging by default.
+Roman expects Hermes systems to include proactive operational logging plus gateway/cron health monitoring.

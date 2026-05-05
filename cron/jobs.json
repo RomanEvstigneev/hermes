@@ -18,15 +18,15 @@
       "schedule_display": "0 8 * * *",
       "repeat": {
         "times": null,
-        "completed": 7
+        "completed": 8
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-04-30T12:57:46.279174+00:00",
-      "next_run_at": "2026-05-04T08:00:00+00:00",
-      "last_run_at": "2026-05-03T08:00:26.748634+00:00",
+      "next_run_at": "2026-05-05T08:00:00+00:00",
+      "last_run_at": "2026-05-04T08:01:18.379372+00:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -51,15 +51,15 @@
       "schedule_display": "0 0 * * *",
       "repeat": {
         "times": null,
-        "completed": 5
+        "completed": 6
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-04-30T13:08:59.374230+00:00",
-      "next_run_at": "2026-05-05T00:00:00+00:00",
-      "last_run_at": "2026-05-03T00:00:23.726440+00:00",
+      "next_run_at": "2026-05-06T00:00:00+00:00",
+      "last_run_at": "2026-05-04T00:01:06.119808+00:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -84,15 +84,15 @@
       "schedule_display": "5 8 * * *",
       "repeat": {
         "times": null,
-        "completed": 3
+        "completed": 4
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-04-30T13:25:25.274026+00:00",
-      "next_run_at": "2026-05-04T08:05:00+00:00",
-      "last_run_at": "2026-05-03T08:07:16.787463+00:00",
+      "next_run_at": "2026-05-05T08:05:00+00:00",
+      "last_run_at": "2026-05-04T08:06:33.281014+00:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -168,7 +168,7 @@
     {
       "id": "976c82c577dd",
       "name": "Daily Cron Health Report",
-      "prompt": "You are Hermes bot producing a Slack-ready daily cron health report. Above is a JSON report about Hermes cron job execution health for the last 24 hours.\n\nIMPORTANT: Respond ONLY in English. Never use Russian or any other language.\n\nDELIVERY: Do not call send_message. Your final response will be automatically delivered to Slack channel C0B18TP48JD by the cron delivery system.\n\nTask: write a concise daily cron health report.\n\nFormat for Slack (do NOT use markdown tables):\n\n:bar_chart: *Daily Cron Health Report* \u2014 [window_start] to [window_end] UTC\n\n*Overall status:* [Healthy / Degraded / Failing]\n\u2022 Jobs configured: N total, N enabled\n\u2022 Runs observed: N total, N successful, N failed/delivery-error\n\u2022 JSON audit log: `/opt/data/logs/cron_runs/YYYY-MM-DD.jsonl`\n\u2022 Full report: `[saved_report_path]`\n\n*Per-job status:*\n\u2022 [job name] \u2014 [OK / FAILED / NO RUN IN WINDOW / NOT DUE] \u2014 last run: [timestamp or never]; next: [timestamp]\n\nIf there were errors, add:\n\n:warning: *Errors detected:*\n\u2022 [job name] \u2014 [error or delivery_error, short actionable summary]\n\u2022 Relevant log excerpt: [1-3 shortest relevant lines]\n\nIf there were no errors, add:\n:white_check_mark: No cron job errors or delivery failures detected in this window.\n\nRules:\n- English only.\n- Keep it brief but actionable.\n- Mention delivery errors separately from job execution errors.\n- Do not include huge tracebacks; summarize and point to the JSON report path.\n- If there are no JSON run records yet, explain that JSON audit logging has just been enabled and future runs should appear there.\n- Return only the Slack message body as your final response.\n\nSecret handling rule: Never include raw credentials, API keys, tokens, Slack token strings (`xox...` / `xapp...`), authorization headers, or private key material in the final Slack message or any file you create/update. If such material appears in input, replace it with `[REDACTED_SECRET]` and mention only that sensitive material was redacted.",
+      "prompt": "You are Hermes bot producing a Slack-ready daily cron health report. Above is a JSON report about Hermes cron job health for the last 24 hours.\n\nIMPORTANT: Respond ONLY in English. Do NOT call send_message. The cron delivery system posts your final response automatically.\n\nAudience: Roman wants an executive operational summary, not raw diagnostic noise.\n\nUse these rules:\n- Use `overall_status` from the JSON.\n- Use `window_local` and all `*_local` fields for times. Do NOT print long ISO timestamps.\n- Do NOT include JSON audit log paths or full report paths in the executive summary.\n- Do NOT use markdown tables.\n- Separate execution health from observability/gateway warnings.\n- Do not put \"no job execution errors\" under an \"Errors detected\" section.\n- If JSON audit records are missing but output fallback found runs, say execution was inferred from saved cron outputs and audit logging is degraded.\n- Keep it concise and actionable.\n\nRequired Slack format:\n\n:bar_chart: *Daily Cron Health Report* \u2014 [window_local]\n\n*Overall status:* [Healthy / Degraded / Failing]\n\u2022 Jobs configured: N total, N enabled\n\u2022 Execution: N runs observed/inferred, N successful, N failed/delivery-error\n\u2022 Delivery: N delivery errors\n\u2022 Evidence: [JSON audit records / fallback from saved cron outputs / jobs state only]\n\n*Per-job status:*\n\u2022 [job name] \u2014 [display_status] \u2014 last: [last_run_local]; next: [next_run_local]\n\n*Execution health:*\n:white_check_mark: No job execution errors or delivery failures detected.\nOR list real failed jobs/delivery failures only.\n\nIf present, add:\n*Observability / gateway warnings:*\n\u2022 Audit logging \u2014 [short status if audit_records_in_window is 0 or evidence source is fallback]\n\u2022 Gateway lifecycle \u2014 [short status if duplicate_gateway_start_attempts or shutdown_noise_events > 0]\n\nDo not include operational file paths unless explicitly requested by the user. If you need to mention logs, say \"details are in the saved JSON report\" without a path.\n\nSecret handling rule: Never include raw credentials, API keys, tokens, Slack token strings (`xox...` / `xapp...`), authorization headers, or private key material in the final Slack message or any file you create/update. If such material appears in input, replace it with `[REDACTED_SECRET]`.",
       "skills": [],
       "skill": null,
       "model": null,
@@ -183,15 +183,15 @@
       "schedule_display": "0 19 * * *",
       "repeat": {
         "times": null,
-        "completed": 6
+        "completed": 7
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-04-30T19:33:59.340934+00:00",
-      "next_run_at": "2026-05-04T19:00:00+00:00",
-      "last_run_at": "2026-05-03T19:00:42.520714+00:00",
+      "next_run_at": "2026-05-05T19:00:00+00:00",
+      "last_run_at": "2026-05-04T19:00:57.365005+00:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -217,15 +217,15 @@
       "schedule_display": "0 4 * * *",
       "repeat": {
         "times": null,
-        "completed": 3
+        "completed": 4
       },
       "enabled": true,
       "state": "scheduled",
       "paused_at": null,
       "paused_reason": null,
       "created_at": "2026-05-01T11:36:58.838059+00:00",
-      "next_run_at": "2026-05-04T04:00:00+00:00",
-      "last_run_at": "2026-05-03T04:01:02.095241+00:00",
+      "next_run_at": "2026-05-05T04:00:00+00:00",
+      "last_run_at": "2026-05-04T04:00:46.325120+00:00",
       "last_status": "ok",
       "last_error": null,
       "last_delivery_error": null,
@@ -280,7 +280,79 @@
         "cronjob"
       ],
       "workdir": null
+    },
+    {
+      "id": "1e910bcfe73b",
+      "name": "Gateway/Cron Sentinel",
+      "prompt": "You are Hermes bot reporting a Gateway/Cron Sentinel alert for Roman.\n\nAbove is output from /opt/data/scripts/gateway_cron_sentinel.py. The script only wakes you when it detected a warning or critical condition; healthy runs are skipped by wakeAgent=false.\n\nIMPORTANT:\n- Respond ONLY in English.\n- Do NOT call send_message. Return a Slack-ready alert as your final response; the cron delivery system posts it automatically.\n- No markdown tables.\n- Be concise, actionable, and operator-friendly.\n- Do not include raw credentials, API keys, tokens, authorization headers, or private key material. If such material appears, redact it as [REDACTED_SECRET].\n\nRequired format:\n\n:rotating_light: *Gateway/Cron Sentinel \u2014 [WARNING or CRITICAL]*\n\u2022 What happened: [one sentence]\n\u2022 Impact: [Slack delivery / cron execution / observability / gateway lifecycle]\n\u2022 Evidence: [1-3 short bullets from the script output]\n\u2022 Recommended next step: [one concrete action]\n\nInclude the SENTINEL_LOG and INCIDENT_LOG paths only at the bottom for debugging.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "gateway_cron_sentinel.py",
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "*/15 * * * *",
+        "display": "*/15 * * * *"
+      },
+      "schedule_display": "*/15 * * * *",
+      "repeat": {
+        "times": null,
+        "completed": 58
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-05-04T09:36:47.626080+00:00",
+      "next_run_at": "2026-05-05T00:15:00+00:00",
+      "last_run_at": "2026-05-04T23:45:28.324575+00:00",
+      "last_status": "ok",
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "slack:C0B18TP48JD",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": null
+    },
+    {
+      "id": "ad19057fc126",
+      "name": "Weekly Gateway/Cron Deep Audit",
+      "prompt": "You are Hermes bot producing the Weekly Gateway/Cron Deep Audit for Roman.\n\nAbove is JSON evidence collected by /opt/data/scripts/weekly_gateway_cron_audit.py. It covers the last 7 days of gateway lifecycle, cron execution, cron audit records, sentinel history, incidents, and relevant logs.\n\nIMPORTANT:\n- Respond ONLY in English.\n- Do NOT call send_message. Return a Slack-ready weekly audit as your final response; the cron delivery system posts it automatically.\n- No markdown tables.\n- Keep it founder-readable in under 45 seconds.\n- Separate actual execution failures from observability warnings and gateway lifecycle noise.\n- Do not include long ISO timestamps; use local display fields already provided in the JSON.\n- Do not include raw credentials, API keys, tokens, authorization headers, or private key material. If such material appears, redact it as [REDACTED_SECRET].\n\nRequired format:\n\n:mag: *Weekly Gateway/Cron Deep Audit* \u2014 [window_local]\n\n*Overall status:* [Healthy / Watch / Needs attention]\n\u2022 Sentinel checks: [count and status mix]\n\u2022 Cron execution: [runs, successful, failed, delivery errors]\n\u2022 Gateway lifecycle: [brief trend]\n\u2022 Observability: [cron audit records present/missing, parse errors if any]\n\n*Notable signals:*\n\u2022 [2-5 concise bullets; say \u201cNo notable negative signals\u201d if clean]\n\n*Recommendation:*\n\u2022 [one practical next step, or \u201cNo action recommended this week\u201d]\n\nAt the bottom include REPORT_PATH and RUN_LOG_PATH from the script output.",
+      "skills": [],
+      "skill": null,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": "weekly_gateway_cron_audit.py",
+      "context_from": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 9 * * 1",
+        "display": "30 9 * * 1"
+      },
+      "schedule_display": "30 9 * * 1",
+      "repeat": {
+        "times": null,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-05-04T09:36:58.608744+00:00",
+      "next_run_at": "2026-05-11T09:30:00+00:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "last_delivery_error": null,
+      "deliver": "slack:C0B18TP48JD",
+      "origin": null,
+      "enabled_toolsets": null,
+      "workdir": null
     }
   ],
-  "updated_at": "2026-05-04T00:00:54.767467+00:00"
+  "updated_at": "2026-05-05T00:00:29.250385+00:00"
 }

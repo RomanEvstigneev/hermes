@@ -226,6 +226,130 @@ Verification workflow:
 4. Check `/opt/data/cron/output/<job_id>/` for the new output markdown file and read it to confirm the generated Slack message body.
 5. If Slack still did not receive it, search logs for `Send error`, `channel_not_found`, and `Fallback send`.
 
+### Gateway/Cron Sentinel — lightweight 15-minute health monitor
+
+Use this pattern when you need frequent, low-noise gateway and cron health checks
+without waking the LLM or spamming Slack on every healthy run.
+
+#### Core idea: `wakeAgent` gate
+
+The Python sentinel script writes `{"wakeAgent":false}` as its final stdout line
+when everything is OK. The cron scheduler reads this and skips the LLM call entirely —
+no Slack message, no token usage. Only when `wakeAgent=true` (warning or critical) does
+the LLM wake up and compose a Slack alert.
+
+```python
+# At end of sentinel script
+result = {"status": status, "issues": issues, ...}
+print(json.dumps(result))  # structured JSONL for audit
+# Gate line — cron scheduler reads this
+print(json.dumps({"wakeAgent": status not in ("ok",)}))
+```
+
+#### What the sentinel checks every 15 minutes
+
+1. **Gateway process** — exactly 1 canonical `hermes gateway run` process + 1 wrapper.
+   If 0 or >1 → critical.
+2. **Duplicate gateway starts** — scan `gateway.log` for `Another gateway instance is already running`
+   in the last 15-minute window → warning if found.
+3. **Slack disconnect** — scan logs for `Slack app token already in use` or `disconnect` → warning.
+4. **Cron jobs** — read `jobs.json`: count enabled jobs, flag any with `last_status == "error"`,
+   flag any that are overdue (past `next_run_at` by >threshold).
+5. **JSONL audit freshness** — if today's `.jsonl` exists but is empty or stale, flag degraded.
+
+#### Structured output
+
+Write a JSONL record per run:
+```
+/opt/data/logs/gateway_sentinel/YYYY-MM-DD.jsonl
+```
+
+Write a human-readable run log:
+```
+/opt/data/logs/cron_runs/gateway-cron-sentinel/YYYY-MM-DD.log
+```
+
+Write to incident log only on warning/critical:
+```
+/opt/data/logs/incident_log.md
+```
+
+#### Cron job registration
+
+```python
+cronjob(action='create',
+    name='Gateway/Cron Sentinel',
+    schedule='*/15 * * * *',
+    script='gateway_cron_sentinel.py',
+    deliver='slack:C0B18TP48JD',
+    prompt='...'   # Only reached when wakeAgent=true
+)
+```
+
+Live instance in Roman's setup:
+```
+Job ID:   1e910bcfe73b
+Schedule: */15 * * * *
+Script:   gateway_cron_sentinel.py
+Deliver:  slack:C0B18TP48JD
+Sentinel JSONL: /opt/data/logs/gateway_sentinel/YYYY-MM-DD.jsonl
+```
+
+#### Companion: Weekly Gateway/Cron Deep Audit
+
+```python
+cronjob(action='create',
+    name='Weekly Gateway/Cron Deep Audit',
+    schedule='30 9 * * 1',   # Monday 09:30 UTC
+    script='weekly_gateway_cron_audit.py',
+    deliver='slack:C0B18TP48JD',
+    prompt='...'
+)
+```
+
+Aggregates 7 days of sentinel records, cron audit JSONL, jobs.json, gateway.log,
+errors.log, gateway_restarts.log, and incident_log excerpts into a trend report at:
+```
+/opt/data/logs/gateway_cron_weekly_audit/YYYY-MM-DD.json
+```
+
+Live instance: Job ID `ad19057fc126`, first run 2026-05-11T09:30:00+00:00.
+
+---
+
+### `compute_overall_status` — avoid false-positive Degraded from CLI teardown noise
+
+**Problem found (2026-05-04):** `shutdown_noise_events` in `cron_health_report.py` was
+causing the daily health report to always show `Degraded` even when everything was
+healthy. The events (`asyncio.run() shutdown`, `Task was destroyed but it is pending!`,
+`Input/output error`) are emitted by prompt_toolkit on **every normal interactive CLI
+exit** — they appear in `errors.log` every time a user closes the Hermes terminal.
+
+**Fix:** Remove `shutdown_noise_events` from the `compute_overall_status` escalation
+trigger. Only `duplicate_gateway_start_attempts` (which signals a real concurrent-gateway
+conflict) should cause Degraded. Shutdown noise should still be collected and reported
+in the observability section, but must not drive overall status.
+
+```python
+def compute_overall_status(summary, audit_active, log_issues):
+    if summary["jobs_with_failures"] or summary["failed_or_delivery_error_runs"]:
+        return "Failing"
+    if not audit_active or summary["execution_evidence_source"] != "jsonl_audit":
+        return "Degraded"
+    # shutdown_noise_events are benign prompt_toolkit teardown artifacts
+    # (asyncio.run() shutdown, Task destroyed) on every normal CLI exit.
+    # Only escalate on duplicate_gateway_start_attempts — a real problem.
+    if log_issues["duplicate_gateway_start_attempts"]:
+        return "Degraded"
+    return "Healthy"
+```
+
+**Also:** filter test/unknown job_ids out of JSONL audit before computing metrics —
+pytest runs write records with job_ids like `job-a`, `monitor-job`, `empty-job` that
+inflate failure counts. Filter by cross-checking against `valid_job_ids` from `jobs.json`.
+
+---
+
 ### Post-session knowledge update reports
 
 When Roman asks whether Hermes can notify him after conversations with other Slack users about memories or knowledge files that changed, answer yes but treat it as a separate automation rather than built-in default behavior.

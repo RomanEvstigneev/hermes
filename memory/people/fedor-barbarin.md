@@ -3,7 +3,7 @@ Slack ID: U0ACC32MFAA
 Role: unknown — to be determined
 Company: Axion Lab
 Last updated: 2026-05-03
-Last seen: 2026-05-02
+Last seen: 2026-05-03
 
 ## Confirmed facts
 <!-- Facts require current supporting evidence from Slack messages. -->
@@ -15,6 +15,7 @@ Last seen: 2026-05-02
 - 2026-05-02 (1x seen): Asked Roman Evstigneev to review a PR for a new blog article.
 - 2026-05-02 (1x seen): Investigated Breadcrumbs and FAQ component issues for the blog and suggested combining original articles with SEO Bot articles on one page.
 - 2026-05-02 (1x seen): Plans to explain the proposed Blog section approach in an updated layout.
+- 2026-05-03 (1x seen): Was asked by Roman Evstigneev to check and clarify the reasoning for scientific-style source links in SEObot-generated Insights articles.
 
 ## Stale (not seen 30+ days)
 <!-- Moved here by weekly review -->

@@ -370,6 +370,10 @@ session_reset:
   at_hour: 4
 plugins:
   enabled: []
+gateway:
+  healthcheck_ping_url: "https://hc-ping.com/6989d618-f27a-4391-9dfa-90aa15c202d7"
+  healthcheck_interval_ticks: 5  # ping every 5 cron-ticker ticks (= 5 minutes at default 60s interval)
+
 post_session_audit:
   enabled: true
   notify_chat_id: D0B0P5BAQSF

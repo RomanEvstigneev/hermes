@@ -217,9 +217,11 @@ hermes cron create SCHED    Create: '30m', 'every 2h', '0 9 * * *'
 hermes cron edit ID         Edit schedule, prompt, delivery
 hermes cron pause/resume ID Control job state
 hermes cron run ID          Trigger on next tick
-hermes cron remove ID       Delete a job
+hermes cron remove ID       Remove job
 hermes cron status          Scheduler status
 ```
+
+When troubleshooting Daily Cron Health Reports, especially apparent contradictions like `Runs observed: 0` / `0 successful` while per-job status is `OK`, distinguish structured JSONL audit records from actual job state and saved markdown outputs. Missing `$HERMES_HOME/logs/cron_runs/YYYY-MM-DD.jsonl` can indicate audit logging/observability is broken even when jobs ran successfully. Health summaries should separate execution, delivery, audit/observability, and gateway lifecycle issues; use compact local CET/CEST display times for Roman's deployment; and keep raw JSON/report paths out of executive summaries. See `references/cron-health-audit-troubleshooting.md` for the diagnostic workflow, report conventions, and fix patterns.
 
 When checking whether a scheduled summary/audit exists, do not rely only on job names. Inspect `hermes cron list`/`cronjob(action='list')`, then verify `/opt/data/cron/jobs.json` plus the referenced script/config when relevant. For Roman's deployment, distinguish:
 - Daily Slack digest jobs that summarize channel discussions from channels where the bot is a member.
